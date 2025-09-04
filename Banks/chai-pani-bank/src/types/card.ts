@@ -38,3 +38,8 @@ export const CreateCardRequest = z.object({
     CardProvider.RUPAY,
   ]),
 });
+
+export const UpdateCardPinRequest = z.object({
+  cardNumber: z.string(),
+  newPin: z.number().max(9999),
+});

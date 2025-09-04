@@ -31,7 +31,7 @@ enum CardProvider {
 
 model BankAccount {
   id                     String   @id @default(uuid())
-  balance                Int      @default(0)
+  balance                Int      @default(5000)
   accountNo              String
   accountHolderName      String
   accountHolderContactNo String
