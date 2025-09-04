@@ -1,5 +1,6 @@
 import { Router } from "express";
 import accountRoute from "./account.route";
+import cardRoute from "./card.route";
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.get("/health", (req, res) => {
 });
 
 router.use("/account", accountRoute);
+router.use("/card", cardRoute);
 
 export default router;
