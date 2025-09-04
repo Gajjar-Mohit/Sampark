@@ -7,8 +7,6 @@
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=flat-square)](https://github.com/your-repo/sampark/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-*Launched on September 04, 2025 | Built with ❤️ for Digital Bharat*
-
 </div>
 
 ---
