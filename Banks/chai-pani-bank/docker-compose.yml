@@ -1,59 +1,58 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database for Project 1
-  postgres-project1:
+  # PostgreSQL Database for Project 2
+  chai-pani-db:
     image: postgres:15-alpine
-    container_name: postgres-project1
+    container_name: chai-pani-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: project1_db
-      POSTGRES_USER: project1_user
-      POSTGRES_PASSWORD: project1_password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: chai-pani-db
+      POSTGRES_USER: chai-pani_user
+      POSTGRES_PASSWORD: chai-pani_password
+
     volumes:
-      - postgres_project1_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - postgres_chai-pani_data:/var/lib/postgresql/data
     networks:
-      - project1-network
+      - chai-pani-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U project1_user -d project1_db"]
+      test: ["CMD-SHELL", "pg_isready -U chai-pani_user -d chai-pani-db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Express App for Project 1
-  app-project1:
+  # Express App for Project 2
+  chai-pani-service:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: app-project1
+    container_name: chai-pani-service
     restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "3001:3000"  # Different port to avoid conflicts
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://project1_user:project1_password@postgres-project1:5432/project1_db
+      DATABASE_URL: postgresql://chai-pani_user:chai-pani_password@chai-pani-db:5432/chai-pani-db
       PORT: 3000
     depends_on:
-      postgres-project1:
+      chai-pani-db:
         condition: service_healthy
     networks:
-      - project1-network
+      - chai-pani-network
     volumes:
       - ./src:/usr/src/app/src:ro
       - ./prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
-        bunx prisma migrate deploy &&
+        bun prisma migrate deploy && 
+        bun run seed && 
         bun run src/index.ts
       "
 
 networks:
-  project1-network:
+  chai-pani-network:
     driver: bridge
 
 volumes:
-  postgres_project1_data:
+  postgres_chai-pani_data:

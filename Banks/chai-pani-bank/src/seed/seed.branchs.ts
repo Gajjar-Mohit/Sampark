@@ -37,7 +37,7 @@ async function seedBranchs(name: string) {
 async function seedBranchsData() {
   for (const branch of chaiPaniBankBranches) {
     await seedBranchs(branch);
-    console.log(branch + " Branch created successfully");
+    console.log(branch + " created successfully");
   }
 }
 

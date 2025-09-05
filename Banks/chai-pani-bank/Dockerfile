@@ -2,6 +2,8 @@
 FROM oven/bun:1 AS base
 WORKDIR /usr/src/app
 
+RUN apt-get update -y && apt-get install -y openssl
+
 # Install dependencies
 FROM base AS deps
 COPY package.json ./
@@ -26,6 +28,3 @@ EXPOSE 3000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
-
-# Run the app
-CMD ["bun", "run", "src/index.ts"]
