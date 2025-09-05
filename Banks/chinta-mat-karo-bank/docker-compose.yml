@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database for Project 2
   chinta-mat-karo-db:
     image: postgres:15-alpine
     container_name: chinta-mat-karo-db
@@ -9,12 +8,9 @@ services:
     environment:
       POSTGRES_DB: chinta-mat-karo_db
       POSTGRES_USER: chinta-mat-karo_user
-      POSTGRES_PASSWORD: chinta-mat-karo_password
-    ports:
-      - "5433:5432"  # Different port to avoid conflicts
+      POSTGRES_PASSWORD: chinta-mat-karo_password 
     volumes:
       - postgres_chinta-mat-karo_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - chinta-mat-karo-network
     healthcheck:
@@ -23,7 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Express App for Project 2
   chinta-mat-karo-service:
     build:
       context: .
@@ -31,7 +26,7 @@ services:
     container_name: chinta-mat-karo-service
     restart: unless-stopped
     ports:
-      - "3002:3000"  # Different port to avoid conflicts
+      - "3002:3000" 
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://chinta-mat-karo_user:chinta-mat-karo_password@chinta-mat-karo-db:5432/chinta-mat-karo_db

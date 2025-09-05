@@ -24,7 +24,6 @@ const chintaMatKaroBankBranches = [
   "Aaram Ki Dukan Square Branch",
 ];
 
-
 async function seedBranchs(name: string) {
   const ifscCode = generateIFSCCode();
   await prisma.branch.create({
@@ -38,6 +37,7 @@ async function seedBranchs(name: string) {
 async function seedBranchsData() {
   for (const branch of chintaMatKaroBankBranches) {
     await seedBranchs(branch);
+    console.log(branch + " created successfully");
   }
 }
 
