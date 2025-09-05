@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Project 2
+  chinta-mat-karo-db:
+    image: postgres:15-alpine
+    container_name: chinta-mat-karo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chinta-mat-karo_db
+      POSTGRES_USER: chinta-mat-karo_user
+      POSTGRES_PASSWORD: chinta-mat-karo_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - postgres_chinta-mat-karo_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - chinta-mat-karo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chinta-mat-karo_user -d chinta-mat-karo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Express App for Project 2
+  chinta-mat-karo-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chinta-mat-karo-service
+    restart: unless-stopped
+    ports:
+      - "3002:3000"  # Different port to avoid conflicts
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chinta-mat-karo_user:chinta-mat-karo_password@chinta-mat-karo-db:5432/chinta-mat-karo_db
+      PORT: 3000
+    depends_on:
+      chinta-mat-karo-db:
+        condition: service_healthy
+    networks:
+      - chinta-mat-karo-network
+    volumes:
+      - ./src:/usr/src/app/src:ro
+      - ./prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed && 
+        bun run src/index.ts
+      "
+
+networks:
+  chinta-mat-karo-network:
+    driver: bridge
+
+volumes:
+  postgres_chinta-mat-karo_data:

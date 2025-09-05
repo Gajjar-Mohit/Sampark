@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+}
+
+enum CardStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CardProvider {
+  VISA
+  MASTERCARD
+  RUPAY
+}
+
+model BankAccount {
+  id                     String   @id @default(uuid())
+  balance                Int      @default(5000)
+  accountNo              String
+  accountHolderName      String
+  accountHolderContactNo String
+  ifscCode               String
+  branchName             String
+  panCardNo              String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  Card Card[]
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Card {
+  id            String       @id @default(uuid())
+  cardNo        String
+  bankAccount   BankAccount  @relation(fields: [bankAccountId], references: [id])
+  bankAccountId String
+  cardType      CardType
+  status        CardStatus
+  provider      CardProvider
+  pin           String
+  expiryDate    DateTime
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
