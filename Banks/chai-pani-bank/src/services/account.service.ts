@@ -1,5 +1,8 @@
 import prisma from "../db";
 import { generateBankAccountNumber } from "../utils/account_number_genrator";
+import { generateCardNumber } from "../utils/card_number_generator";
+import { generateCardPin } from "../utils/card_ping_generator";
+import { generateCardValidityDate } from "../utils/card_validity_date_generator";
 import { CustomError } from "../utils/error_handler";
 
 export const createAccount = async (
