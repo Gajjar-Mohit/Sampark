@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun install --production"
+    "build": "bun install --production",
+    "seed": "bun src/seed/seed.branchs.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

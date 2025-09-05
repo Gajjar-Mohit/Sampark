@@ -1,32 +1,33 @@
 import prisma from "../db";
 import { generateIFSCCode } from "../utils/ifsc_code_generator";
 
-const chaiPaniBankBranches = [
-  "Cutting Chai Chowk Branch",
-  "Full Glass Pani Nagar Branch",
-  "Biskoot Bazaar Branch",
-  "Tapri Junction Branch",
-  "Matka Chowk Branch",
-  "Kulhad Corner Branch",
-  "Thodi Aur Refill Branch",
-  "Chhota Peg Colony Branch",
-  "Extra Pyaali Puram Branch",
-  "Chatori Galli Branch",
-  "Adda No. 420 Branch",
-  "Garam Gilaas Gate Branch",
-  "Lassi Lane Branch",
-  "Gupshup Chowk Branch",
-  "Masala Pouch Market Branch",
-  "Doodh Doodh Doodh Dairy Branch",
-  "Samosa Street Branch",
-  "Pav Bhaji Path Branch",
-  "Chatori Chauraha Branch",
-  "Chai With Extra Sugar Square Branch",
+const chintaMatKaroBankBranches = [
+  "Aram Se Chowk Branch",
+  "Bindass Bazaar Branch",
+  "Mast Mauj Nagar Branch",
+  "Chhodo Na Colony Branch",
+  "Fikr Not Square Branch",
+  "Chillax Corner Branch",
+  "Bas Ho Jayega Junction Branch",
+  "Sab Theek Hai Colony Branch",
+  "No Tension Puram Branch",
+  "Befikar Galli Branch",
+  "Mast Hai Na Market Branch",
+  "Sab Changa Si Gate Branch",
+  "Carefree Lane Branch",
+  "Moj Masti Chowk Branch",
+  "Easy Peasy Path Branch",
+  "Khulke Jiyo Dairy Branch",
+  "Relax Street Branch",
+  "Fattu Mat Bano Path Branch",
+  "Tension Free Chauraha Branch",
+  "Aaram Ki Dukan Square Branch",
 ];
+
 
 async function seedBranchs(name: string) {
   const ifscCode = generateIFSCCode();
-  return await prisma.branch.create({
+  await prisma.branch.create({
     data: {
       name,
       code: ifscCode,
@@ -35,9 +36,8 @@ async function seedBranchs(name: string) {
 }
 
 async function seedBranchsData() {
-  for (const branch of chaiPaniBankBranches) {
+  for (const branch of chintaMatKaroBankBranches) {
     await seedBranchs(branch);
-    console.log(branch + " Branch created successfully");
   }
 }
 
