@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  chillar-pay-db:
+    image: postgres:15-alpine
+    container_name: chillar-pay-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chillar-pay_db
+      POSTGRES_USER: chillar-pay_user
+      POSTGRES_PASSWORD: chillar-pay_password 
+    volumes:
+      - postgres_chillar-pay_data:/var/lib/postgresql/data
+    networks:
+      - chillar-pay-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chillar-pay_user -d chillar-pay_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chillar-pay-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chillar-pay-service
+    restart: unless-stopped
+    ports:
+      - "8002:8000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chillar-pay_user:chillar-pay_password@chillar-pay-db:5432/chillar-pay_db
+      PORT: 8000
+    depends_on:
+      chillar-pay-db:
+        condition: service_healthy
+    networks:
+      - chillar-pay-network
+    volumes:
+      - ./src:/usr/src/app/src:ro
+      - ./prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy &&
+        bun run src/index.ts
+      "
+
+networks:
+  chillar-pay-network:
+    driver: bridge
+
+volumes:
+  postgres_chillar-pay_data:

@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  paisa-vasool-bank-db:
+    image: postgres:15-alpine
+    container_name: paisa-vasool-bank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paisa-vasool-bank_db
+      POSTGRES_USER: paisa-vasool-bank_user
+      POSTGRES_PASSWORD: paisa-vasool-bank_password 
+    volumes:
+      - postgres_paisa-vasool-bank_data:/var/lib/postgresql/data
+    networks:
+      - paisa-vasool-bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paisa-vasool-bank_user -d paisa-vasool-bank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  paisa-vasool-bank-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paisa-vasool-bank-service
+    restart: unless-stopped
+    ports:
+      - "3002:3000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://paisa-vasool-bank_user:paisa-vasool-bank_password@paisa-vasool-bank-db:5432/paisa-vasool-bank_db
+      PORT: 3000
+    depends_on:
+      paisa-vasool-bank-db:
+        condition: service_healthy
+    networks:
+      - paisa-vasool-bank-network
+    volumes:
+      - ./src:/usr/src/app/src:ro
+      - ./prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed && 
+        bun run src/index.ts
+      "
+
+networks:
+  paisa-vasool-bank-network:
+    driver: bridge
+
+volumes:
+  postgres_paisa-vasool-bank_data:

@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  babu-rao-ganpatrao-bank-db:
+    image: postgres:15-alpine
+    container_name: babu-rao-ganpatrao-bank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: babu-rao-ganpatrao-bank_db
+      POSTGRES_USER: babu-rao-ganpatrao-bank_user
+      POSTGRES_PASSWORD: babu-rao-ganpatrao-bank_password 
+    volumes:
+      - postgres_babu-rao-ganpatrao-bank_data:/var/lib/postgresql/data
+    networks:
+      - babu-rao-ganpatrao-bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U babu-rao-ganpatrao-bank_user -d babu-rao-ganpatrao-bank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  babu-rao-ganpatrao-bank-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: babu-rao-ganpatrao-bank-service
+    restart: unless-stopped
+    ports:
+      - "3002:3000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://babu-rao-ganpatrao-bank_user:babu-rao-ganpatrao-bank_password@babu-rao-ganpatrao-bank-db:5432/babu-rao-ganpatrao-bank_db
+      PORT: 3000
+    depends_on:
+      babu-rao-ganpatrao-bank-db:
+        condition: service_healthy
+    networks:
+      - babu-rao-ganpatrao-bank-network
+    volumes:
+      - ./src:/usr/src/app/src:ro
+      - ./prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed && 
+        bun run src/index.ts
+      "
+
+networks:
+  babu-rao-ganpatrao-bank-network:
+    driver: bridge
+
+volumes:
+  postgres_babu-rao-ganpatrao-bank_data:

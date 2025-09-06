@@ -23,4 +23,4 @@ COPY . .
 RUN bunx prisma generate
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8000
