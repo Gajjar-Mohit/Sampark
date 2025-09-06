@@ -1,12 +1,21 @@
 {
   "name": "nth",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun install --production"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/kafkajs": "^1.9.0",
+    "kafkajs": "^2.2.4"
   }
 }

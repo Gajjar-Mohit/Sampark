@@ -1,6 +1,7 @@
 import { Router } from "express";
 import accountRoute from "./account.route";
 import cardRoute from "./card.route";
+import tpapRouter from "./tpap.route";
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.get("/health", (req, res) => {
 
 router.use("/account", accountRoute);
 router.use("/card", cardRoute);
+router.use("/tpap", tpapRouter);
 
 export default router;

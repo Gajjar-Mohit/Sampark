@@ -14,7 +14,7 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
     throw new Error("User does not exist");
   }
 
-    // Send Request to PSP Bank
+    // Send Request to PSP Bank to check user is registered in the bank
     
-    
+
 };
