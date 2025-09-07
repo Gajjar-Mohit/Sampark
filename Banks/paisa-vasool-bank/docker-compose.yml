@@ -26,11 +26,12 @@ services:
     container_name: paisa-vasool-bank-service
     restart: unless-stopped
     ports:
-      - "3002:3000" 
+      - "3004:3000" 
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://paisa-vasool-bank_user:paisa-vasool-bank_password@paisa-vasool-bank-db:5432/paisa-vasool-bank_db
       PORT: 3000
+      KAFKA_BASEURL: 192.168.1.5:9092
     depends_on:
       paisa-vasool-bank-db:
         condition: service_healthy

@@ -1,0 +1,38 @@
+export const registeredBanks = [
+  {
+    ifscCodePrefix: "CMK",
+    iin: "456123",
+    bankToNTH: "456123-to-NTH",
+    nthToBank: "NTH-to-456123",
+    nthToBankGroup: "NTH-to-456123-group",
+    bankToNTHGroup: "456123-to-NTH-group",
+    name: "Chinta Mat Karo Bank",
+  },
+  {
+    ifscCodePrefix: "CPB",
+    iin: "789456",
+    bankToNTH: "789456-to-NTH",
+    nthToBank: "NTH-to-789456",
+    nthToBankGroup: "NTH-to-789456-group",
+    bankToNTHGroup: "789456-to-NTH-group",
+    name: "Chai Pani Bank",
+  },
+  {
+    ifscCodePrefix: "PVB",
+    iin: "321987",
+    bankToNTH: "321987-to-NTH",
+    nthToBank: "NTH-to-321987",
+    nthToBankGroup: "NTH-to-321987-group",
+    bankToNTHGroup: "321987-to-NTH-group",
+    name: "Paisa Vasool Bank",
+  },
+  {
+    ifscCodePrefix: "BRG",
+    iin: "654321",
+    bankToNTH: "654321-to-NTH",
+    nthToBank: "NTH-to-654321",
+    nthToBankGroup: "NTH-to-654321-group",
+    bankToNTHGroup: "654321-to-NTH-group",
+    name: "Babu Rao Ganpatrao Bank",
+  },
+];

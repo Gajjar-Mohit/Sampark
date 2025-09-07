@@ -1,44 +1,21 @@
 import { Kafka } from "kafkajs";
+import { listenForRequests } from "./ingress/verify-details";
+
+if (!process.env.KAFKA_BASEURL) {
+  throw new Error("KAFKA_BASEURL is not set");
+}
 
 export const kafka = new Kafka({
   clientId: "nth-switch",
-  brokers: ["192.168.1.5:9092"],
-  // Add connection timeout and retry settings
-  connectionTimeout: 3000,
-  requestTimeout: 25000,
-  retry: {
-    initialRetryTime: 100,
-    retries: 8,
-  },
+  brokers: [process.env.KAFKA_BASEURL],
 });
 
-async function init() {
-  const admin = kafka.admin();
+// await createConnections()
 
-  try {
-    console.log("Admin connecting...");
-    await admin.connect(); // Add await here
-    console.log("Admin Connection Success...");
+// async function sendResponseToNTH() {
+//   const res = await forwardToBanks("NTH-to-321987", "BRG15602800", "2342344562");
+//   console.log(res);
+// }
 
-    console.log("Creating Topic [verify-details]");
-    await admin.createTopics({
-      timeout: 30000, // Increase timeout
-      waitForLeaders: true, // Wait for partition leaders
-      topics: [
-        {
-          topic: "verify-detailsss",
-          numPartitions: 2,
-          replicationFactor: 1, // Add replication factor
-        },
-      ],
-    });
-    console.log("Topic Created Success [verify-details]");
-  } catch (error) {
-    console.error("Error during Kafka admin operations:", error);
-  } finally {
-    console.log("Disconnecting Admin..");
-    await admin.disconnect();
-  }
-}
-
-init().catch(console.error);
+// sendResponseToNTH();
+listenForRequests();

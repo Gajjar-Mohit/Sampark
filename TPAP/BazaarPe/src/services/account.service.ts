@@ -1,3 +1,4 @@
+import axios from "axios";
 import prisma from "../db";
 
 export const addAccount = async (contactNo: string, ifscCode: string) => {
@@ -14,7 +15,19 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
     throw new Error("User does not exist");
   }
 
-    // Send Request to PSP Bank to check user is registered in the bank
-    
-
+  try {
+    const response = await axios.post(
+      "http://localhost:3004/api/v1/tpap/check",
+      {
+        contactNo,
+        ifscCode,
+      }
+    );
+    if (!response.data.data) {
+      throw new Error("Invalid response from PSP");
+    }
+    return response.data.data;
+  } catch (error) {
+    console.log(error);
+  }
 };

@@ -1,6 +1,6 @@
 export function generateIFSCCode() {
   const length = 8;
-  const prefix = "CMK";
+  const prefix = "PVB";
   if (length <= 0) {
     return "";
   }

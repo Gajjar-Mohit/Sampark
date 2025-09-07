@@ -26,11 +26,12 @@ services:
     container_name: babu-rao-ganpatrao-bank-service
     restart: unless-stopped
     ports:
-      - "3002:3000" 
+      - "3001:3000" 
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://babu-rao-ganpatrao-bank_user:babu-rao-ganpatrao-bank_password@babu-rao-ganpatrao-bank-db:5432/babu-rao-ganpatrao-bank_db
       PORT: 3000
+      KAFKA_BASEURL: 192.168.1.5:9092
     depends_on:
       babu-rao-ganpatrao-bank-db:
         condition: service_healthy

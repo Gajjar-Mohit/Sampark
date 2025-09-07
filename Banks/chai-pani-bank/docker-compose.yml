@@ -29,11 +29,12 @@ services:
     container_name: chai-pani-service
     restart: unless-stopped
     ports:
-      - "3001:3000"  # Different port to avoid conflicts
+      - "3002:3000"  # Different port to avoid conflicts
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://chai-pani_user:chai-pani_password@chai-pani-db:5432/chai-pani-db
       PORT: 3000
+      KAFKA_BASEURL: 192.168.1.5:9092
     depends_on:
       chai-pani-db:
         condition: service_healthy
