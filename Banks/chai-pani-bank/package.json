@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun src/index.ts",
+    "dev": "NODE_NO_WARNINGS=1 bun src/index.ts",
     "start": "bun src/index.ts",
     "build": "bun install --production",
     "seed": "bun src/seed/seed.branchs.ts"

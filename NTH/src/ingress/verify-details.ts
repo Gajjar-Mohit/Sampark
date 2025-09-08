@@ -1,37 +1,3 @@
-// import { kafka } from "..";
-// import { registeredBanks } from "../core/registered-banks";
-// import { forwardToBanks } from "../egress/forward-to-banks";
-
-// export async function listernForRequests() {
-//   // Create consumers for each bank's incoming messages
-//   const consumerPromises = registeredBanks.map((bank) =>
-//     listernFromBanks(bank.bankToNTHGroup)
-//   );
-
-//   // Start all consumers concurrently
-//   await Promise.all(consumerPromises);
-// }
-
-// export async function listernFromBanks(groupId: string) {
-//   console.log("Listerning to banks " + groupId);
-//   const consumer = kafka.consumer({ groupId });
-//   await consumer.connect();
-
-//   const bankIINs = registeredBanks.map((bank) => bank.bankToNTH);
-
-//   await consumer.subscribe({ topics: bankIINs, fromBeginning: true });
-
-//   await consumer.run({
-//     eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
-//       console.log(`[${topic}]: PART:${partition}:`, message.value?.toString());
-//       // forwardToNTH(
-//       //   message.value?.toString().split("|")[0] ?? "",
-//       //   message.value?.toString().split("|")[1] ?? ""
-//       // );
-//     },
-//   });
-// }
-
 import { kafka } from "..";
 import { registeredBanks } from "../core/registered-banks";
 import { forwardToBanks } from "../egress/forward-to-banks";
