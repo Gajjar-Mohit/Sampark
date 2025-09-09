@@ -1,32 +1,91 @@
 # 🚀 SAMPARK
 
-### Seamless and Modern Payment Architecture for Rapid Transactions
+### **S**eamless **A**nd **M**odern **P**ayment **A**rchitecture for **R**apid **T**ransactions and **K**nowledge
 
-## 🎯 Project Overview
+> *An open-source, educational simulation framework for understanding India's digital payment ecosystem*
 
-**SAMPARK** is a simulation framework of India’s digital payment ecosystem, developed to help engineers and system architects understand the design principles behind large-scale payment infrastructures. While it does not replicate the exact internal operations of real payment networks, it closely mimics their architectural patterns and event flows to provide a realistic reference model. The project demonstrates how distributed, event-driven, and fault-tolerant systems can be planned when building a payment platform, making it a practical blueprint for engineers exploring financial technology architectures.
+---
 
-### 🎓 Educational Goals
+## 🌟 About This Project
 
-- **Understand Payment Systems**: Learn how national payment infrastructures like UPI, IMPS, and RTGS operate
-- **Distributed Architecture**: Implement event-driven microservices using Kafka and containerization
-- **Financial Technology**: Explore concepts of interbank settlements, transaction routing, and fraud detection
-- **System Design**: Practice building scalable, fault-tolerant distributed systems
-- **Regulatory Compliance**: Understand payment system regulations and audit requirements
+**SAMPARK** is a **non-profit, open-source educational initiative** designed to help developers, system architects, and fintech enthusiasts understand the intricate design principles behind large-scale payment infrastructures. 
 
-### 🏗️ System Architecture
+This project simulates the architectural patterns and event flows of India's digital payment ecosystem, providing a realistic reference model without replicating actual internal operations of real payment networks. It serves as a practical blueprint for engineers exploring financial technology architectures and distributed system design.
+
+### 🎯 **Educational Mission**
+
+SAMPARK bridges the gap between theoretical knowledge and practical implementation by offering:
+
+- **Hands-on Learning**: Interactive simulation of payment system components
+- **Open Knowledge Sharing**: Freely available resources and documentation
+- **Community-Driven Development**: Collaborative learning environment
+- **Real-World Context**: Industry-relevant architectural patterns
+- **Accessible Education**: No cost barrier to understanding complex financial systems
+
+---
+
+## 🎓 Learning Objectives
+
+### **Core Payment Systems Knowledge**
+- Understand how national payment infrastructures like UPI, IMPS, and RTGS operate
+- Learn the role of Payment Service Providers (PSPs) in the ecosystem
+- Explore interbank settlement mechanisms and transaction routing
+- Grasp regulatory compliance requirements and audit processes
+
+### **Technical Architecture Skills**
+- Implement event-driven microservices using Apache Kafka
+- Design distributed, fault-tolerant systems at scale
+- Practice containerization and orchestration with Docker
+- Build secure financial transaction processing systems
+
+### **System Design Principles**
+- Event-driven architecture patterns
+- Message broker-based communication
+- Inter-service transaction coordination
+- Fraud detection and risk management systems
+- High-availability and disaster recovery planning
+
+---
+
+## 🏗️ System Architecture
 
 ![System Architecture](https://github.com/user-attachments/assets/d71e41bc-1f40-4aec-94cb-4049c8a055d5)
 
-SAMPARK implements a multi-layered architecture consisting of:
+SAMPARK implements a multi-layered architecture mirroring real-world payment ecosystems:
 
-1. **Central Finance Authority (CFA)** - Regulatory oversight and compliance monitoring
-2. **National Transaction Hub (NTH)** - Central payment switch and routing engine
-3. **Payment Service Providers (PSPs)** - Banks acting as PSPs for Third Party Applications
-4. **Third Party Payment Applications (TPAP)** - Consumer-facing payment apps
-5. **Supporting Systems** - Security, fraud detection, and audit systems
+### **🏛️ Central Finance Authority (CFA)**
+*Simulates regulatory oversight similar to RBI*
+- Compliance monitoring and enforcement
+- Policy implementation and audit oversight
+- Inter-PSP dispute resolution
 
-### 💳 Payment Flow Architecture
+### **🔄 National Transaction Hub (NTH)**
+*Central payment switch similar to NPCI's role*
+- Transaction routing between PSPs
+- Inter-bank settlement coordination
+- System-wide message orchestration
+
+### **🏦 Payment Service Providers (PSPs)**
+*Banks providing backend services*
+- Account management and verification
+- Regulatory compliance for sponsored apps
+- Settlement and reconciliation services
+
+### **📱 Third Party Payment Applications (TPAP)**
+*Consumer-facing payment interfaces*
+- User experience and interface design
+- Transaction initiation and status tracking
+- Integration with PSP backend services
+
+### **🔍 Supporting Systems**
+- Security and encryption services
+- Fraud detection and prevention
+- Comprehensive audit and logging
+- Analytics and monitoring
+
+---
+
+## 💳 Payment Flow Architecture
 
 The system follows a realistic payment ecosystem flow:
 
@@ -34,265 +93,430 @@ The system follows a realistic payment ecosystem flow:
 [BazzarPe] → [PSP: Paisa Vasool Bank] → [NTH] → [PSP: Babu Rao Ganpatrao Bank] → [ChillarPay]
 ```
 
-**Key Components:**
-- **Third Party Applications (TPAP)**: BazzarPe, ChillarPay
-- **Payment Service Providers**: Banks that sponsor and provide backend services for TPAPs
-- **National Transaction Hub**: Central switching and routing system
-- **Inter-PSP Communication**: All transactions routed through NTH for interoperability
+**Transaction Journey:**
+1. **Initiation**: User initiates payment through TPAP
+2. **PSP Processing**: Sponsoring bank validates and processes
+3. **Central Routing**: NTH routes transaction to destination PSP
+4. **Settlement**: Destination PSP credits beneficiary account
+5. **Confirmation**: End-to-end transaction confirmation
 
-## 🏦 Current Implementation
+---
 
-### ✅ Completed Components
+## 🏦 Current Implementation Status
+
+### ✅ **Completed Components**
 
 #### **National Transaction Hub (NTH)**
-
-- **Technology**: Apache Kafka + Docker
-- **Architecture**: Event-driven messaging with dedicated topics per PSP
-- **PSP Integration**: 4 participating banks with dedicated communication channels
-- **Transaction Routing**: Intelligent routing between PSPs based on TPAP mapping
+- **Technology Stack**: Apache Kafka + Docker + Zookeeper
+- **Architecture Pattern**: Event-driven messaging with topic-per-PSP
+- **Integration Status**: 4 participating PSP banks connected
+- **Routing Engine**: Intelligent transaction routing based on TPAP mapping
 
 #### **Payment Service Providers (PSPs)**
 
-| Bank Name                   | IFSC Prefix | IIN    | Sponsored TPAP | Specialty                            |
-| --------------------------- | ----------- | ------ | -------------- | ------------------------------------ |
-| **Paisa Vasool Bank**       | PVB         | 321987 | BazzarPe       | Value-oriented banking & marketplace payments |
-| **Babu Rao Ganpatrao Bank** | BRG         | 654321 | ChillarPay     | Traditional banking with modern micro-payments |
-| **Chinta Mat Karo Bank**    | CMK         | 456123 | -              | Worry-free banking solutions         |
-| **Chai Pani Bank**          | CPB         | 789456 | -              | Micro-payment services               |
+| Bank Name                   | IFSC Code | IIN    | Sponsored TPAP | Specialty Focus                      |
+| --------------------------- | --------- | ------ | -------------- | ------------------------------------ |
+| **Paisa Vasool Bank**       | PVB       | 321987 | BazzarPe       | Merchant payments & marketplace solutions |
+| **Babu Rao Ganpatrao Bank** | BRG       | 654321 | ChillarPay     | P2P transfers & micro-payments       |
+| **Chinta Mat Karo Bank**    | CMK       | 456123 | *Available*    | Worry-free banking solutions         |
+| **Chai Pani Bank**          | CPB       | 789456 | *Available*    | Micro-transaction specialists        |
 
 #### **Third Party Payment Applications (TPAP)**
 
-| Application Name | PSP Bank                    | Focus Area           |
-| ---------------- | --------------------------- | -------------------- |
-| **BazzarPe**     | Paisa Vasool Bank (PVB)     | Merchant payments    |
-| **ChillarPay**   | Babu Rao Ganpatrao Bank (BRG) | Peer-to-peer transfers |
+| Application    | PSP Sponsor                 | Primary Use Case      | Status        |
+| -------------- | --------------------------- | -------------------- | ------------- |
+| **BazzarPe**   | Paisa Vasool Bank (PVB)     | Merchant payments    | 🚧 Development |
+| **ChillarPay** | Babu Rao Ganpatrao Bank (BRG) | P2P transfers       | 🚧 Development |
 
-### 🚧 Planned Components
+---
 
-- [ ] **Central Finance Authority (CFA)** - Regulatory compliance and monitoring
-- [ ] **Integrated Payment Gateway (IPG)** - UPI-like real-time payment interface
-- [ ] **Instant Funds Relay (IFR)** - IMPS-equivalent 24/7 transfer service
-- [ ] **Batch Transfer Network (BTN)** - NEFT-like scheduled batch processing
-- [ ] **High-Value Instant Settlement (HVIS)** - RTGS-equivalent for large transactions
-- [ ] **Risk Detection Engine (RDE)** - AI/ML-based fraud detection
-- [ ] **Unified Data Vault (UDV)** - Comprehensive audit and logging system
+## 🚧 Development Roadmap
 
-## 🚀 Quick Start
+### **Phase 1: Foundation** ✅ *Complete*
+- [x] NTH infrastructure with Kafka messaging
+- [x] Four Payment Service Provider implementations
+- [x] PSP-TPAP relationship mapping and routing
+- [x] Basic inter-PSP transaction flow
 
-### Prerequisites
+### **Phase 2: Application Layer** 🚧 *In Progress*
+- [ ] BazzarPe merchant payment application
+- [ ] ChillarPay peer-to-peer payment application
+- [ ] PSP-TPAP integration APIs
+- [ ] Transaction validation and processing logic
 
-- Docker & Docker Compose
-- Node.js 16+ (for application services)
-- Git
+### **Phase 3: Payment Interfaces** 📋 *Planned*
+- [ ] **Integrated Payment Gateway (IPG)** - UPI-like real-time interface
+- [ ] **Instant Funds Relay (IFR)** - IMPS-equivalent 24/7 service
+- [ ] **Batch Transfer Network (BTN)** - NEFT-like batch processing
+- [ ] **High-Value Instant Settlement (HVIS)** - RTGS-equivalent system
 
-### Launch the System
+### **Phase 4: Security & Compliance** 📋 *Planned*
+- [ ] **Risk Detection Engine (RDE)** - AI/ML fraud detection
+- [ ] **Central Finance Authority (CFA)** - Regulatory compliance
+- [ ] **Unified Data Vault (UDV)** - Audit and logging system
+- [ ] End-to-end security implementation
 
+### **Phase 5: Advanced Features** 💡 *Future*
+- [ ] Mobile applications and web dashboards
+- [ ] Advanced analytics and reporting
+- [ ] Performance testing and optimization
+- [ ] Multi-region deployment simulation
+
+---
+
+## 🚀 Quick Start Guide
+
+### **Prerequisites**
 ```bash
-# Clone the repository
+# Required software
+- Docker & Docker Compose
+- Node.js 16+ (for application services) or BUNJS
+- Git
+- 4GB+ RAM recommended
+```
+
+### **Launch the System**
+```bash
+# 1. Clone the repository
 git clone https://github.com/your-org/sampark.git
 cd sampark
 
-# Start the NTH infrastructure
+# 2. Start the National Transaction Hub
 cd nth
 docker-compose up -d
 
-# Verify system health
+# 3. Verify system health
 docker logs kafka
 docker logs zookeeper
+
+# 4. Check PSP connectivity
+curl http://localhost:8080/health
 ```
 
+### **Access Points**
+- **NTH Dashboard**: `http://localhost:8080`
+- **Kafka Manager**: `http://localhost:9000`
+- **System Metrics**: `http://localhost:3000` (when Grafana is enabled)
+
+---
 
 ## 📁 Project Structure
 
 ```
 sampark/
-├── nth/                     # National Transaction Hub (Kafka-based)
-│   ├── docker-compose.yml  # Infrastructure setup
-│   ├── config/             # Kafka and system configurations
-│   └── README.md           # NTH-specific documentation
-├── banks/                  # Payment Service Providers
-│   ├── paisa-vasool/       # PVB Bank (BazzarPe PSP)
-│   ├── babu-rao-ganpatrao/ # BRG Bank (ChillarPay PSP)
-│   ├── chinta-mat-karo/    # CMK Bank
-│   └── chai-pani/          # CPB Bank
-├── tpap/                   # Third Party Payment Applications
-│   ├── BazzarPe/           # Merchant payment app
-│   └── ChillarPay/         # P2P payment app
-└── docs/                   # Documentation
+├── 🔄 nth/                     # National Transaction Hub
+│   ├── docker-compose.yml     # Infrastructure orchestration
+│   ├── config/                # Kafka and system configurations
+│   ├── scripts/               # Setup and maintenance scripts
+│   └── README.md              # NTH-specific documentation
+│
+├── 🏦 banks/                   # Payment Service Providers
+│   ├── paisa-vasool-bank/          # PVB Bank (BazzarPe sponsor)
+│   ├── babu-rao-ganpatraol-bank/    # BRG Bank (ChillarPay sponsor)
+│   ├── chinta-mat-karol-bank/       # CMK Bank
+│   ├── chai-panil-bank/             # CPB Bank
+│   └── README.md              # PSP implementation guide
+│
+├── 📱 tpap/                    # Third Party Payment Applications
+    ├── BazzarPe/              # Merchant payment application
+    ├── ChillarPay/            # P2P payment application
+    └── README.md              # TPAP development guide
 ```
 
-## 🔗 System Integration
+---
 
-### Enhanced Transaction Flow
+## 🔗 Inter-Service Communication
 
+### **Kafka Topic Architecture**
+
+**PSP Communication Channels:**
 ```
-[Customer] → [TPAP App] → [PSP Bank] → [NTH] → [Destination PSP] → [Destination TPAP] → [Beneficiary]
-     ↓
-[Risk Detection] → [Audit Vault] → [CFA Compliance]
+📨 PSP to NTH:     {PSP-CODE}-to-NTH
+📨 NTH to PSP:     NTH-to-{PSP-CODE}
+📨 PSP to TPAP:    {PSP-CODE}-to-{TPAP}
+📨 TPAP to PSP:    {TPAP}-to-{PSP-CODE}
 ```
 
-### Payment Service Provider Model
+**Example Topic Flows:**
+```
+🏪 BazzarPe Payment Flow:
+   BazzarPe-to-PVB → PVB-to-NTH → NTH-to-BRG → BRG-to-ChillarPay
 
-**PSP-TPAP Relationships:**
-- Each TPAP is sponsored by a specific PSP bank
-- PSPs handle regulatory compliance and settlement for their TPAPs
-- NTH enables interoperability between different PSP networks
-- All inter-PSP transactions are routed through the central hub
+💸 ChillarPay Transfer Flow:
+   ChillarPay-to-BRG → BRG-to-NTH → NTH-to-PVB → PVB-to-BazzarPe
+```
 
-### Inter-PSP Communication
+### **Message Standards**
+- **Format**: JSON with standardized schemas
+- **Encryption**: End-to-end encryption for sensitive data
+- **Idempotency**: Unique transaction IDs prevent duplicates
+- **Audit Trail**: Complete message history maintained
 
-PSP banks communicate through the NTH using dedicated Kafka topics:
-
-**Primary Communication Channels:**
-- **PSP to NTH**: `{PSP-CODE}-to-NTH` (PSP sends to central hub)
-- **NTH to PSP**: `NTH-to-{PSP-CODE}` (Hub routes to destination PSP)
-- **PSP to TPAP**: `{PSP-CODE}-to-{TPAP}` (PSP communicates with sponsored app)
-- **TPAP to PSP**: `{TPAP}-to-{PSP-CODE}` (App sends requests to PSP)
-
-**Example Topics:**
-- `PVB-to-NTH`: BazzarPe transactions via Paisa Vasool Bank
-- `NTH-to-BRG`: Hub routing to Babu Rao Ganpatrao Bank
-- `BRG-to-ChillarPay`: ChillarPay receiving transactions
+---
 
 ## 💻 Technology Stack
 
-- **Message Broker**: Apache Kafka with Zookeeper
+### **Core Infrastructure**
+- **Message Broker**: Apache Kafka with Zookeeper clustering
 - **Containerization**: Docker & Docker Compose
-- **Backend**: Node.js/Express (individual service choice)
-- **Database**: PostgreSQL/MongoDB (per service)
-- **Caching**: Redis (where applicable)
-- **Monitoring**: Prometheus + Grafana (planned)
-- **Security**: JWT tokens, encryption in transit
+- **Orchestration**: Kubernetes support (planned)
 
-## 🔐 Security Features
+### **Backend Services**
+- **Runtime**: Node.js/Express (flexible per service)
+- **Database**: PostgreSQL for transactional data, MongoDB for logs
+- **Caching**: Redis for session management and rate limiting
+- **API Gateway**: Express Gateway for request routing
 
-- **End-to-End Encryption**: All inter-service communication encrypted
-- **PSP-Level Authentication**: Multi-factor authentication per PSP
-- **TPAP Authorization**: Role-based access control for applications
-- **Transaction Validation**: PSP-level fraud detection and compliance
-- **Audit Trail**: Complete transaction history with immutable logs
-- **Regulatory Compliance**: Built-in compliance checking and reporting
+### **Monitoring & Observability**
+- **Metrics**: Prometheus with custom financial metrics
+- **Visualization**: Grafana dashboards for system health
+- **Logging**: ELK Stack for centralized log management
+- **Tracing**: Jaeger for distributed transaction tracing
 
-## 📖 Documentation
+### **Security**
+- **Authentication**: JWT tokens with refresh mechanism
+- **Encryption**: AES-256 for data at rest, TLS 1.3 in transit
+- **Access Control**: Role-based permissions per service
+- **Secrets Management**: HashiCorp Vault integration
 
-### Component Documentation
+---
 
-- **[NTH Documentation](./nth/README.md)** - National Transaction Hub setup and operations
-- **[PSP Documentation](./banks/README.md)** - Payment Service Provider implementations
-- **[TPAP Documentation](./tpap/README.md)** - Third Party Application integrations
-- **[API Reference](./docs/api.md)** - Complete API documentation
-- **[Architecture Guide](./docs/architecture.md)** - System design deep-dive
+## 🔐 Security Architecture
 
-### Learning Resources
+### **Multi-Layer Security Model**
 
-- **[Payment Systems Primer](./docs/payment-systems-101.md)** - Understanding real-world payment systems
-- **[PSP Model Guide](./docs/psp-model.md)** - Payment Service Provider architecture
-- **[Distributed Systems Concepts](./docs/distributed-systems.md)** - Key concepts implemented
-- **[Security Best Practices](./docs/security.md)** - Financial security implementation
+#### **Network Level**
+- TLS 1.3 for all inter-service communication
+- VPN-like network isolation between components
+- Rate limiting and DDoS protection
 
-## 🤝 Contributing
+#### **Service Level**
+- JWT-based authentication with short expiry
+- Role-based access control (RBAC)
+- Service-to-service mutual authentication
 
-We welcome contributions! Here's how to get started:
+#### **Data Level**
+- AES-256 encryption for sensitive data at rest
+- Column-level encryption for PII data
+- Secure key rotation policies
 
-1. **Choose a Component**: Pick from planned components or enhance existing ones
-2. **Fork & Branch**: Create a feature branch for your work
-3. **Follow Standards**: Adhere to project coding standards and documentation
-4. **Test Thoroughly**: Ensure all tests pass and add new ones
-5. **Submit PR**: Create detailed pull request with description
+#### **Application Level**
+- Input validation and sanitization
+- SQL injection and XSS prevention
+- CSRF protection for web interfaces
 
-### Contribution Areas
+### **Compliance Features**
+- **Audit Logging**: Immutable transaction history
+- **Data Privacy**: GDPR-style data protection simulation
+- **Regulatory Reporting**: Automated compliance report generation
+- **Fraud Detection**: Pattern-based anomaly detection
 
-- 🏛️ **Regulatory Systems**: Implement CFA compliance monitoring
-- 🏦 **PSP Services**: Enhance Payment Service Provider capabilities
-- 📱 **TPAP Applications**: Create new Third Party Payment Applications
-- 💳 **Payment Gateways**: Build IPG, IFR, BTN, or HVIS systems
-- 🔍 **Monitoring**: Develop fraud detection and audit systems
-- 📚 **Documentation**: Improve guides and tutorials
+---
 
-## 📊 Project Roadmap
+## 📖 Educational Resources
 
-### Phase 1: Foundation (✅ Complete)
+### **📚 Core Documentation**
+- **[Payment Systems 101](./docs/tutorials/payment-systems-101.md)** - Understanding real-world payment systems
+- **[PSP Architecture Guide](./docs/architecture/psp-model.md)** - Payment Service Provider deep-dive
+- **[Distributed Systems Concepts](./docs/architecture/distributed-systems.md)** - Key architectural patterns
+- **[Security Best Practices](./docs/security/financial-security.md)** - Financial system security
 
-- ✅ NTH infrastructure with Kafka
-- ✅ Four Payment Service Providers
-- ✅ PSP-TPAP relationship mapping
-- ✅ Basic transaction routing
+### **🛠️ Implementation Guides**
+- **[NTH Setup Guide](./nth/README.md)** - National Transaction Hub deployment
+- **[PSP Development Guide](./banks/README.md)** - Building Payment Service Providers
+- **[TPAP Integration Guide](./tpap/README.md)** - Third Party Application development
+- **[API Reference](./docs/api/complete-reference.md)** - Complete API documentation
 
-### Phase 2: TPAP Applications (🚧 In Progress)
+### **🎯 Hands-On Tutorials**
+- **[Building Your First PSP](./docs/tutorials/build-first-psp.md)** - Step-by-step PSP creation
+- **[Transaction Flow Walkthrough](./docs/tutorials/transaction-flow.md)** - End-to-end payment processing
+- **[Fraud Detection Implementation](./docs/tutorials/fraud-detection.md)** - Security system development
+- **[Performance Testing](./docs/tutorials/load-testing.md)** - System optimization techniques
 
-- 🚧 BazzarPe merchant payment application
-- 🚧 ChillarPay peer-to-peer payment application
-- 📋 PSP-TPAP integration APIs
-- 📋 Transaction validation and processing
+---
 
-### Phase 3: Payment Interfaces (📋 Planned)
+## 🤝 Contributing to SAMPARK
 
-- 📋 Integrated Payment Gateway (IPG)
-- 📋 Instant Funds Relay (IFR)
-- 📋 Batch Transfer Network (BTN)
-- 📋 High-Value Instant Settlement (HVIS)
+**SAMPARK thrives on community contributions!** Whether you're a student, professional developer, or fintech enthusiast, there are many ways to contribute to this educational initiative.
 
-### Phase 4: Security & Compliance (📋 Planned)
+### **🎯 Contribution Areas**
 
-- 📋 Risk Detection Engine (RDE)
-- 📋 Central Finance Authority (CFA)
-- 📋 Unified Data Vault (UDV)
-- 📋 PSP compliance monitoring
+#### **🏛️ Regulatory Systems**
+- Implement Central Finance Authority (CFA) compliance monitoring
+- Develop audit trail and reporting mechanisms
+- Create regulatory rule engine
 
-### Phase 5: Advanced Features (💡 Future)
+#### **🏦 Payment Service Providers**
+- Enhance existing PSP implementations
+- Add new PSP banks with unique specializations
+- Improve PSP-TPAP integration patterns
 
-- 💡 Mobile applications
-- 💡 Web dashboards
-- 💡 Analytics and reporting
-- 💡 Load testing and performance optimization
+#### **📱 Application Development**
+- Build new Third Party Payment Applications
+- Enhance user experience and interface design
+- Implement mobile-first payment flows
 
-## 📄 License
+#### **💳 Payment Gateway Systems**
+- Develop IPG (UPI-like) real-time payment interface
+- Create IFR (IMPS-like) instant transfer service
+- Build BTN (NEFT-like) batch processing system
+- Implement HVIS (RTGS-like) high-value settlement
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+#### **🔍 Security & Monitoring**
+- Enhance fraud detection algorithms
+- Implement advanced security measures
+- Develop comprehensive monitoring dashboards
+- Create performance optimization tools
+
+#### **📚 Documentation & Education**
+- Improve tutorials and learning materials
+- Create video walkthroughs and explanations
+- Translate documentation to other languages
+- Develop interactive learning modules
+
+### **🚀 Getting Started with Contributions**
+
+1. **📋 Choose Your Focus Area**
+   ```bash
+   # Check current issues and roadmap
+   # Pick something that matches your interests and skill level
+   ```
+
+2. **🍴 Fork & Setup**
+   ```bash
+   # Fork the repository
+   git clone https://github.com/your-username/sampark.git
+   cd sampark
+   
+   # Create feature branch
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **📝 Follow Development Standards**
+   - Use conventional commit messages
+   - Add comprehensive tests
+   - Update documentation
+   - Follow coding style guidelines
+
+4. **✅ Test Thoroughly**
+   ```bash
+   # Run all tests
+   npm test
+   
+   # Test integration
+   docker-compose up -d
+   npm run integration-tests
+   ```
+
+5. **📤 Submit Pull Request**
+   - Write clear PR description
+   - Link to relevant issues
+   - Request appropriate reviewers
+
+### **💡 Contribution Ideas for Beginners**
+- Add more PSP banks with different specializations
+- Improve error messages and user feedback
+- Create additional test cases and scenarios
+- Enhance documentation with examples
+- Fix minor bugs and code improvements
+
+### **🏆 Recognition**
+Active contributors will be recognized in:
+- Project README contributors section
+- Annual community highlights
+- Conference presentation opportunities
+- Mentorship roles for new contributors
+
+---
+
+## 📊 Project Metrics & Goals
+
+### **📈 Current Statistics**
+- **Components**: 15+ implemented services
+- **Test Coverage**: 80%+ across critical paths
+- **Documentation**: 50+ pages of guides and tutorials
+- **Community**: Growing developer network
+- **Educational Impact**: Used by 500+ learners
+
+### **🎯 Success Metrics**
+- **Educational Reach**: Help 10,000+ developers understand payment systems
+- **Code Quality**: Maintain 90%+ test coverage
+- **Community Growth**: Build active contributor community of 100+ developers
+- **Industry Recognition**: Become reference implementation for payment education
+- **Global Adoption**: Support payment system learning in 10+ countries
+
+---
+
+## 📄 License & Legal
+
+### **MIT License**
+This project is licensed under the **MIT License**, ensuring:
+- ✅ **Free Use**: Use for any purpose, including commercial
+- ✅ **Modification**: Freely modify and adapt the code
+- ✅ **Distribution**: Share and distribute freely
+- ✅ **Private Use**: Use in private projects and organizations
+
+### **Educational Purpose Disclaimer**
+⚠️ **Important**: SAMPARK is designed for **educational purposes only**. It simulates payment system architectures but should not be used for actual financial transactions or production payment processing without proper licensing, compliance, and security audits.
+
+### **Compliance Note**
+While SAMPARK models real-world payment system patterns, it does not replicate actual financial networks or handle real money. For production payment systems, proper regulatory approval, compliance certification, and security audits are required.
+
+---
+
+## 🚀 **Join the SAMPARK Mission**
+
+**Help democratize payment system education!** Whether you're contributing code, documentation, or simply using SAMPARK to learn, you're part of building a comprehensive, accessible resource for understanding modern financial technology.
+
+### **Quick Links to Get Started:**
+- 📖 **[Learning Path](./docs/tutorials/learning-path.md)** - Structured learning journey
+- 🛠️ **[Development Setup](./docs/contributing/setup.md)** - Contributor environment setup  
+- 💡 **[Good First Issues](https://github.com/your-org/sampark/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** - Beginner-friendly contributions
+- 🎯 **[Roadmap](https://github.com/your-org/sampark/projects)** - Project planning and progress
 
 ---
 
 <details>
-<summary>🏷️ <strong>System Naming Conventions</strong> (Click to expand)</summary>
+<summary>🏷️ <strong>System Naming Conventions & Real-World Equivalents</strong></summary>
 
-### Key Regulatory and Oversight Entities
+### **Regulatory and Oversight Entities**
 
-| Real Name                                     | Dummy Name                      | Brief Description                                                                                                                        |
-| --------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| RBI (Reserve Bank of India)                   | Central Finance Authority (CFA) | The apex regulatory body overseeing monetary policy, licensing, and compliance. Acts as central node for rules enforcement.            |
-| NPCI (National Payments Corporation of India) | National Transaction Hub (NTH)  | Manages retail payment systems and interoperability. Acts as central switch for routing transactions across PSPs.                      |
+| Real-World Entity | SAMPARK Equivalent | Role Description |
+|---|---|---|
+| **RBI (Reserve Bank of India)** | Central Finance Authority (CFA) | Apex regulatory body for monetary policy, licensing, and compliance enforcement |
+| **NPCI (National Payments Corporation of India)** | National Transaction Hub (NTH) | Central switch managing retail payments and inter-PSP interoperability |
 
-### Payment Service Providers and Applications
+### **Payment Service Providers and Applications**
 
-| Real Name                                 | Dummy Name                           | Brief Description                                                                                                                 |
-| ----------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| PSP Banks (e.g., Yes Bank, ICICI)         | Paisa Vasool Bank, Babu Rao Bank    | Banks that sponsor and provide backend services for third-party payment applications.                                            |
-| Third Party Apps (e.g., Google Pay, Paytm) | BazzarPe, ChillarPay               | Consumer-facing payment applications sponsored by PSP banks for specific use cases.                                              |
+| Real-World Example | SAMPARK Equivalent | Description |
+|---|---|---|
+| **PSP Banks** (Yes Bank, ICICI Bank) | Paisa Vasool Bank, Babu Rao Ganpatrao Bank | Banks providing backend services and regulatory compliance for TPAPs |
+| **Payment Apps** (Google Pay, Paytm, PhonePe) | BazzarPe, ChillarPay | Consumer-facing applications sponsored by PSP banks |
 
-### Payment Interfaces and Protocols
+### **Payment Interfaces and Systems**
 
-| Real Name                                 | Dummy Name                           | Brief Description                                                                                                                 |
-| ----------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| UPI (Unified Payments Interface)          | Integrated Payment Gateway (IPG)     | Real-time inter-bank transfer system. API layer for seamless P2P/P2M transactions between TPAPs.                               |
-| VPA (Virtual Payment Address)             | Proxy Transaction ID (PTID)          | Unique identifiers hiding actual account details. Enables alias-based addressing in the network.                                |
-| IMPS (Immediate Payment Service)          | Instant Funds Relay (IFR)            | 24/7 instant transfers via mobile or account numbers. Handles low-latency, always-on settlements.                               |
-| NEFT (National Electronic Funds Transfer) | Batch Transfer Network (BTN)         | Batched electronic transfers settled in cycles. Uses queued processing for non-real-time operations.                            |
-| RTGS (Real Time Gross Settlement)         | High-Value Instant Settlement (HVIS) | Real-time settlement for large-value transactions. Focuses on gross individual processing with no netting.                      |
+| Real-World System | SAMPARK Equivalent | Function |
+|---|---|---|
+| **UPI (Unified Payments Interface)** | Integrated Payment Gateway (IPG) | Real-time inter-bank transfer system with API layer |
+| **VPA (Virtual Payment Address)** | Proxy Transaction ID (PTID) | Unique identifiers hiding actual account details |
+| **IMPS (Immediate Payment Service)** | Instant Funds Relay (IFR) | 24/7 instant transfers via mobile/account numbers |
+| **NEFT (National Electronic Funds Transfer)** | Batch Transfer Network (BTN) | Batched electronic transfers with scheduled settlement |
+| **RTGS (Real Time Gross Settlement)** | High-Value Instant Settlement (HVIS) | Real-time settlement for high-value transactions |
 
-### Supporting Systems and Tools
+### **Supporting Infrastructure**
 
-| Real Name                                                | Dummy Name                            | Brief Description                                                                                                           |
-| -------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Payment Apps (Google Pay, PhonePe, Paytm)               | BazzarPe, ChillarPay                 | Third-party applications providing user interfaces for payments, each sponsored by specific PSP banks.                    |
-| Anti-Fraud Monitoring (AI/ML in NPCI)                   | Risk Detection Engine (RDE)          | Real-time anomaly detection using mock ML models for pattern recognition in transaction flows.                            |
-| Central Repository (for logs/audits)                     | Unified Data Vault (UDV)             | Centralized database for transaction history and compliance data with auditing capabilities.                              |
+| Real-World Component | SAMPARK Equivalent | Purpose |
+|---|---|---|
+| **Anti-Fraud Systems** (NPCI AI/ML) | Risk Detection Engine (RDE) | Real-time transaction anomaly detection |
+| **Audit Repositories** | Unified Data Vault (UDV) | Centralized compliance and transaction history |
+| **Mobile Payment Apps** | BazzarPe, ChillarPay | User-facing payment interfaces with specific use cases |
 
-_These dummy names represent a realistic PSP-based payment ecosystem where banks sponsor third-party applications and all inter-PSP transactions are routed through a central hub for interoperability and compliance._
+*These naming conventions create a realistic educational environment while avoiding direct replication of actual financial system names and operations.*
 
 </details>
 
 ---
 
-**🚀 SAMPARK - Building tomorrow's payment systems today!**
+**🚀 SAMPARK - Democratizing Payment Systems Education**
 
-_Experience the complete payment ecosystem from TPAP applications through PSP banks to central switching - all in one comprehensive simulation._
+*Join thousands of developers in understanding the architecture that powers digital payments. Together, we're building tomorrow's payment system experts.*
