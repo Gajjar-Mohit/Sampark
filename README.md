@@ -1,7 +1,7 @@
 # 🚀 SAMPARK
 ### Seamless and Modern Payment Architecture for Rapid Transactions
 
-# System Architecture
+# System Architecture (TILL NOW)
 ![arch](https://github.com/user-attachments/assets/d71e41bc-1f40-4aec-94cb-4049c8a055d5)
 
 #### Key Regulatory and Oversight Entities
