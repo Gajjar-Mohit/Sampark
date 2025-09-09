@@ -7,16 +7,16 @@ import { listernForNTH } from "./services/nth.service";
 
 const app = express();
 
-if (!process.env.KAFKA_BASEURL) {
-  throw new Error("KAFKA_BASEURL is not set");
-}
+// if (!process.env.KAFKA_BASEURL) {
+//   throw new Error("KAFKA_BASEURL is not set");
+// }
 
-export const kafka = new Kafka({
-  clientId: "nth-switch",
-  brokers: [process.env.KAFKA_BASEURL],
-});
+// export const kafka = new Kafka({
+//   clientId: "nth-switch",
+//   brokers: [process.env.KAFKA_BASEURL],
+// });
 
-listernForNTH();
+// listernForNTH();
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
