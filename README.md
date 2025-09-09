@@ -4,7 +4,7 @@
 
 ## 🎯 Project Overview
 
-**SAMPARK** is a comprehensive simulation of India's digital payment ecosystem, designed to demonstrate the intricate workings of modern payment systems through practical implementation. This project recreates the entire payment infrastructure using dummy equivalents of real-world systems, providing a learning platform for understanding distributed payment architectures, event-driven systems, and financial technology concepts.
+**SAMPARK** is a simulation framework of India’s digital payment ecosystem, developed to help engineers and system architects understand the design principles behind large-scale payment infrastructures. While it does not replicate the exact internal operations of real payment networks, it closely mimics their architectural patterns and event flows to provide a realistic reference model. The project demonstrates how distributed, event-driven, and fault-tolerant systems can be planned when building a payment platform, making it a practical blueprint for engineers exploring financial technology architectures.
 
 ### 🎓 Educational Goals
 
