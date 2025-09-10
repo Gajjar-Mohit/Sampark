@@ -37,6 +37,7 @@ model BankAccount {
   accountHolderContactNo String
   ifscCode               String
   branchName             String
+  mmid                   String
   panCardNo              String
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

@@ -31,7 +31,7 @@ export async function listernForNTH() {
           await sendNotFoundResponseToNTH();
           return;
         }
-        await sendResponseToNTH(account);
+        await sendResponseToNTH(JSON.stringify(account));
         return;
       } else if (key.includes("account-details")) {
         // console.log("Account details received");
@@ -51,7 +51,7 @@ async function sendResponseToNTH(accountDetails: string) {
     messages: [
       {
         key: "account-details",
-        value: JSON.stringify({ accountDetails }),
+        value: accountDetails,
       },
     ],
   });
@@ -68,6 +68,22 @@ async function sendNotFoundResponseToNTH() {
       {
         key: "account-details",
         value: "Not Found",
+      },
+    ],
+  });
+}
+
+export async function initiateIMPSTransfer(details: any) {
+  const producer = kafka.producer();
+  console.log("Connecting 654321-to-NTH");
+  await producer.connect();
+  console.log("654321-to-NTH Connected Successfully");
+  await producer.send({
+    topic: "654321-to-NTH",
+    messages: [
+      {
+        key: "imps-transfer",
+        value: JSON.stringify(details),
       },
     ],
   });
