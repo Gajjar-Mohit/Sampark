@@ -22,5 +22,8 @@ COPY . .
 # Generate Prisma client in production
 RUN bunx prisma generate
 
+# Seeding for first time setup
+# RUN bun run seed
+
 # Expose port
 EXPOSE 3000

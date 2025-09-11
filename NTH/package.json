@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "NODE_NO_WARNINGS=1 bun src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun install --production"
+    "build": "bun install --production",
+    "seed": "bun src/seed.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
