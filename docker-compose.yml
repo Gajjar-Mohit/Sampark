@@ -1,0 +1,306 @@
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    # ports:
+    #   - "2181:2181"
+    networks:
+      - kafka-network
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    # ports:
+    #   - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+
+    networks:
+      - kafka-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: "none"
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "6379:6379"  # Redis server port
+      - "8001:8001"  # RedisInsight web UI port
+    networks:
+      - kafka-network
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  nth-switch:
+    build:
+      context: ./nth
+      dockerfile: Dockerfile
+    container_name: nth-service
+    environment:
+      NODE_ENV: production
+      KAFKA_BASEURL: kafka:9092
+      REDIS_URL: redis://redis-stack:6379
+    depends_on:
+      kafka:
+        condition: service_healthy
+      redis-stack:
+        condition: service_started
+    networks:
+      - kafka-network
+    volumes:
+      - ./nth/src:/usr/src/app/src:ro
+      - ./nth/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for Redis to be ready...' &&
+        bun run seed &&
+        bun run src/index.ts
+      "
+
+  babu-rao-ganpatrao-bank-db:
+    image: postgres:15-alpine
+    container_name: babu-rao-ganpatrao-bank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: babu-rao-ganpatrao-bank_db
+      POSTGRES_USER: babu-rao-ganpatrao-bank_user
+      POSTGRES_PASSWORD: babu-rao-ganpatrao-bank_password 
+    volumes:
+      - postgres_babu-rao-ganpatrao-bank_data:/var/lib/postgresql/data
+    networks:
+      - babu-rao-ganpatrao-bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U babu-rao-ganpatrao-bank_user -d babu-rao-ganpatrao-bank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  chai-pani-db:
+    image: postgres:15-alpine
+    container_name: chai-pani-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chai-pani-db
+      POSTGRES_USER: chai-pani_user
+      POSTGRES_PASSWORD: chai-pani_password
+
+    volumes:
+      - postgres_chai-pani_data:/var/lib/postgresql/data
+    networks:
+      - chai-pani-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chai-pani_user -d chai-pani-db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chinta-mat-karo-db:
+    image: postgres:15-alpine
+    container_name: chinta-mat-karo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chinta-mat-karo_db
+      POSTGRES_USER: chinta-mat-karo_user
+      POSTGRES_PASSWORD: chinta-mat-karo_password 
+    volumes:
+      - postgres_chinta-mat-karo_data:/var/lib/postgresql/data
+    networks:
+      - chinta-mat-karo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chinta-mat-karo_user -d chinta-mat-karo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  paisa-vasool-bank-db:
+    image: postgres:15-alpine
+    container_name: paisa-vasool-bank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paisa-vasool-bank_db
+      POSTGRES_USER: paisa-vasool-bank_user
+      POSTGRES_PASSWORD: paisa-vasool-bank_password 
+    volumes:
+      - postgres_paisa-vasool-bank_data:/var/lib/postgresql/data
+    networks:
+      - paisa-vasool-bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paisa-vasool-bank_user -d paisa-vasool-bank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  babu-rao-ganpatrao-bank-service:
+    build:
+      context: ./banks/babu-rao-ganpatrao-bank
+      dockerfile: Dockerfile
+    container_name: babu-rao-ganpatrao-bank-service
+    restart: unless-stopped
+    ports:
+      - "3001:3000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://babu-rao-ganpatrao-bank_user:babu-rao-ganpatrao-bank_password@babu-rao-ganpatrao-bank-db:5432/babu-rao-ganpatrao-bank_db
+      PORT: 3000
+      KAFKA_BASEURL: kafka:9092
+    depends_on:
+      babu-rao-ganpatrao-bank-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+    networks:
+      - babu-rao-ganpatrao-bank-network
+      - kafka-network
+    volumes:
+      - ./banks/babu-rao-ganpatrao-bank/src:/usr/src/app/src:ro
+      - ./banks/babu-rao-ganpatrao-bank/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed &&
+        bun run src/index.ts
+      "
+
+  # Express App for Project 2
+  chai-pani-service:
+    build:
+      context: ./banks/chai-pani-bank
+      dockerfile: Dockerfile
+    container_name: chai-pani-service
+    restart: unless-stopped
+    ports:
+      - "3002:3000"  # Different port to avoid conflicts
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chai-pani_user:chai-pani_password@chai-pani-db:5432/chai-pani-db
+      PORT: 3000
+      KAFKA_BASEURL: kafka:9092
+    depends_on:
+      chai-pani-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - chai-pani-network
+      - kafka-network
+    volumes:
+      - ./banks/chai-pani-bank/src:/usr/src/app/src:ro
+      - ./banks/chai-pani-bank/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed &&
+        bun run src/index.ts
+      "
+      
+
+  chinta-mat-karo-service:
+    build:
+      context: ./banks/chinta-mat-karo-bank
+      dockerfile: Dockerfile
+    container_name: chinta-mat-karo-service
+    restart: unless-stopped
+    ports:
+      - "3003:3000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chinta-mat-karo_user:chinta-mat-karo_password@chinta-mat-karo-db:5432/chinta-mat-karo_db
+      PORT: 3000
+      KAFKA_BASEURL: kafka:9092
+    depends_on:
+      chinta-mat-karo-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - chinta-mat-karo-network
+      - kafka-network
+    volumes:
+      - ./banks/chinta-mat-karo-bank/src:/usr/src/app/src:ro
+      - ./banks/chinta-mat-karo-bank/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed &&
+        bun run src/index.ts
+      "
+
+  paisa-vasool-bank-service:
+    build:
+      context: ./banks/paisa-vasool-bank
+      dockerfile: Dockerfile
+    container_name: paisa-vasool-bank-service
+    restart: unless-stopped
+    ports:
+      - "3004:3000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://paisa-vasool-bank_user:paisa-vasool-bank_password@paisa-vasool-bank-db:5432/paisa-vasool-bank_db
+      PORT: 3000
+      KAFKA_BASEURL: kafka:9092
+    depends_on:
+      paisa-vasool-bank-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - paisa-vasool-bank-network
+      - kafka-network
+    volumes:
+      - ./banks/paisa-vasool-bank/src:/usr/src/app/src:ro
+      - ./banks/paisa-vasool-bank/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy && 
+        bun run seed &&
+        bun run src/index.ts
+      "
+
+networks:
+  chai-pani-network:
+    driver: bridge
+  chinta-mat-karo-network:
+    driver: bridge
+  paisa-vasool-bank-network:
+    driver: bridge
+  babu-rao-ganpatrao-bank-network:
+    driver: bridge
+  kafka-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres_chai-pani_data:
+  postgres_chinta-mat-karo_data:
+  postgres_paisa-vasool-bank_data:
+  postgres_babu-rao-ganpatrao-bank_data:

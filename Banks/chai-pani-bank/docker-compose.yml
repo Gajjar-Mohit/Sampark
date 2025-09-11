@@ -47,7 +47,6 @@ services:
       sh -c "
         echo 'Waiting for database to be ready...' &&
         bun prisma migrate deploy && 
-        bun run seed && 
         bun run src/index.ts
       "
 
