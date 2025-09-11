@@ -33,14 +33,62 @@ export async function listernForNTH() {
         }
         await sendResponseToNTH(JSON.stringify(account));
         return;
-      } else if (key.includes("account-details")) {
+      }
+      if (key.includes("account-details")) {
         // console.log("Account details received");
         await sendResponseToNTH(value);
+        return;
+      }
+
+      if (message.key?.toString().includes("imps-transfer-debit-remitter")) {
+        await debitRequest(message.value?.toString() || "");
+        return;
+      }
+      if (
+        message.key?.toString().includes("imps-transfer-credit-beneficiary")
+      ) {
+        await creditRequest(message.value?.toString() || "");
         return;
       }
     },
   });
 }
+
+async function debitRequest(details: any) {
+  //debit from the account
+  console.log("Details received for debit: ", details);
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending response to nth");
+  await producer.send({
+    topic: "654321-to-NTH",
+    messages: [
+      {
+        key: "imps-transfer-debit-remitter-success",
+        value: JSON.stringify(details),
+      },
+    ],
+  });
+}
+
+async function creditRequest(details: any) {
+  //debit from the account
+  console.log("Details received for credit: ", details);
+
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending response to nth");
+  await producer.send({
+    topic: "654321-to-NTH",
+    messages: [
+      {
+        key: "imps-transfer-credit-benificiary-success",
+        value: JSON.stringify(details),
+      },
+    ],
+  });
+}
+
 async function sendResponseToNTH(accountDetails: string) {
   const producer = kafka.producer();
   console.log("Connecting 654321-to-NTH");

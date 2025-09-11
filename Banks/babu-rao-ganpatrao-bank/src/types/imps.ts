@@ -6,5 +6,8 @@ export const IMPS_TranferRequest = z.object({
   beneficiaryMMID: z.string().optional(),
   benificiaryIFSCode: z.string().optional(),
   amount: z.string(),
-
+  remitterAccountNo: z.string().optional(),
+  remitterMobileNo: z.string(),
+  remitterMMID: z.string().optional(),
+  remitterIFSCode: z.string().optional(),
 });

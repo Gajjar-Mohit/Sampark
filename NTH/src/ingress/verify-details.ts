@@ -133,13 +133,30 @@ async function processIncomingMessage(
 }
 
 async function processIMPSTransfer(topic: string, key: string, value: string) {
+  let beneficiaryBank;
+  let remitterBank;
   try {
     console.log(
       `Processing IMPS transfer message - Topic: ${topic}, KEY: ${key}, VALUE: ${value}`
     );
 
     if (key === "imps-transfer") {
-      await verifyDetails(topic, key, value);
+      const data = JSON.parse(value);
+      const {
+        remitterAccountNo,
+        remitterMobileNo,
+        remitterMMID,
+        remitterIFSCode,
+        amount,
+      } = data;
+      remitterBank = {
+        accountNo: remitterAccountNo,
+        ifscCode: remitterIFSCode,
+        contactNo: remitterMobileNo,
+        mmid: remitterMMID,
+        amount: amount,
+      };
+      beneficiaryBank = await verifyDetails(topic, key, value);
       return;
     }
     if (key.includes("imps-transfer-error")) {
@@ -147,38 +164,29 @@ async function processIMPSTransfer(topic: string, key: string, value: string) {
       return;
     }
 
-    if (key.includes("imps-transfer-verified-details")) {
+    if (
+      key.includes("imps-transfer-verified-details") &&
+      beneficiaryBank &&
+      remitterBank
+    ) {
       console.log("IMPS transfer verified details received");
       const res = JSON.parse(value);
       console.log("Details received: ", res);
-      const beneficiaryBank = "";
-      const remitterBank = "";
-
       //debit from remitter bank
-      await forwardToBank(
-        remitterBank,
-        "imps-transfer-debit",
-        JSON.stringify({
-          amount: res.amount,
-          accountNo: res.beneficiaryAccountNo,
-          mobileobileNo: res.beneficiaryMobileNo,
-          MMID: res.beneficiaryMMID,
-          IFSCode: res.benificiaryIFSCode,
-        })
-      );
 
+      await debitFromRemitter(topic, remitterBank, beneficiaryBank);
+
+      return;
+    }
+
+    if (key.includes("imps-transfer-debit-remitter")) {
+      console.log("IMPS transfer debit remitter details received");
+      const res = JSON.parse(value);
+      console.log("Details received: ", res);
       //credit to beneficiary bank
-      await forwardToBank(
-        beneficiaryBank,
-        "imps-transfer-credit",
-        JSON.stringify({
-          amount: res.amount,
-          beneficiaryAccountNo: res.beneficiaryAccountNo,
-          beneficiaryMobileNo: res.beneficiaryMobileNo,
-          beneficiaryMMID: res.beneficiaryMMID,
-          benificiaryIFSCode: res.benificiaryIFSCode,
-        })
-      );
+
+      await creditToBeneficiary(topic, remitterBank, beneficiaryBank);
+
       return;
     }
   } catch (error) {
@@ -237,8 +245,8 @@ async function verifyDetails(topic: string, key: string, value: string) {
       accountNo: beneficiaryAccountNo,
       replyTo: benificiaryBank.bankToNTH,
     });
-
     await forwardToBank(benificiaryBank.nthToBank, key, value);
+    return benificiaryBank;
   } else if (beneficiaryMMID) {
     console.log("Verifying details using MMID");
     const key = "imps-transfer-verify-details";
@@ -261,9 +269,75 @@ async function verifyDetails(topic: string, key: string, value: string) {
     });
 
     await forwardToBank(benificiaryBank.nthToBank, key, value);
+    return benificiaryBank;
   } else {
     const key = "imps-transfer-error";
     const value = "Missing beneficiary details";
     await forwardToBank(topic, key, value);
   }
+}
+
+async function debitFromRemitter(
+  topic: string,
+  remitterDetails: any,
+  beneficiaryDetails: any
+) {
+  const remitterBank = registeredBanks.find(
+    (bank) => bank.ifscCodePrefix === remitterDetails.ifscCode.substring(0, 3)
+  );
+  if (!remitterBank) {
+    const key = "imps-transfer-error";
+    const value = "Remitter bank not found";
+    forwardToBank(topic, key, value);
+    return;
+  }
+
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending debit request to " + remitterBank.name);
+  await producer.send({
+    topic: remitterBank.nthToBank,
+    messages: [
+      {
+        key: "imps-transfer-debit-remitter",
+        value: JSON.stringify({
+          ...remitterDetails,
+          ...beneficiaryDetails,
+        }),
+      },
+    ],
+  });
+}
+
+async function creditToBeneficiary(
+  topic: string,
+  remitterDetails: any,
+  beneficiaryDetails: any
+) {
+  const remitterBank = registeredBanks.find(
+    (bank) =>
+      bank.ifscCodePrefix === beneficiaryDetails.ifscCode.substring(0, 3)
+  );
+  if (!remitterBank) {
+    const key = "imps-transfer-error";
+    const value = "Beneficiary bank not found";
+    forwardToBank(topic, key, value);
+    return;
+  }
+
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending debit request to " + remitterBank.name);
+  await producer.send({
+    topic: remitterBank.nthToBank,
+    messages: [
+      {
+        key: "imps-transfer-credit-beneficiary",
+        value: JSON.stringify({
+          ...remitterDetails,
+          ...beneficiaryDetails,
+        }),
+      },
+    ],
+  });
 }
