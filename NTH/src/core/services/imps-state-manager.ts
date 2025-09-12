@@ -123,6 +123,73 @@ export const saveTXState = async (impsState: any) => {
   }
 };
 
+export async function saveIntermidiateTXState(
+  transactionId: string,
+  impsState: any
+) {
+  try {
+    // Validate inputs - this is the key fix
+    if (!transactionId) {
+      throw new Error("Transaction ID is required");
+    }
+
+    // Use the transactionId parameter instead of impsState.transactionId
+    const existingState = await redisClient.get(transactionId);
+    let txState: any;
+
+    if (existingState) {
+      txState = JSON.parse(existingState);
+      // Initialize processingHistory if it doesn't exist
+      if (!txState.processingHistory) {
+        txState.processingHistory = [];
+      }
+      txState.processingHistory.push({
+        step: impsState.step,
+        timestamp: new Date().toISOString(),
+        processor: impsState.processor,
+      });
+    } else {
+      txState = {
+        transactionId: transactionId,
+        processingHistory: [
+          {
+            step: impsState.step,
+            timestamp: new Date().toISOString(),
+            processor: impsState.processor,
+          },
+        ],
+      };
+    }
+    if (impsState.step === "CREDIT_BENEFICIARY_COMPLETE") {
+      const finalState = {
+        transactionId: transactionId,
+        processingHistory: txState.processingHistory,
+        remitterBank: {
+          accountNo: txState.remitterBank.accountNo,
+          ifscCode: txState.remitterBank.ifscCode,
+          contactNo: txState.remitterBank.contactNo,
+          mmid: txState.remitterBank.mmid,
+        },
+        beneficiaryBank: {
+          accountNo: txState.beneficiaryBank.accountNo,
+          ifscCode: txState.beneficiaryBank.ifscCode,
+          contactNo: txState.beneficiaryBank.contactNo,
+          mmid: txState.beneficiaryBank.mmid,
+        },
+        amount: txState.remitterBank.amount,
+      };
+      console.log("Saving intermediate transaction state " + finalState);
+      await redisClient.set(transactionId, JSON.stringify(finalState));
+    } else {
+      await redisClient.set(transactionId, JSON.stringify(txState));
+    }
+    console.log("Intermediate transaction state saved successfully");
+    return txState;
+  } catch (error) {
+    console.error("Error saving intermediate transaction state:", error);
+    throw error;
+  }
+}
 export async function processIMPSTransfer(
   topic: string,
   key: string,
@@ -136,6 +203,10 @@ export async function processIMPSTransfer(
       if (state.key === key) {
         const data = JSON.parse(value);
         console.log(state.step);
+        await saveIntermidiateTXState(data.txnId, {
+          step: state.step,
+          processor: topic,
+        });
         if (key === "imps-transfer") {
           const {
             remitterAccountNo,
@@ -178,6 +249,7 @@ export async function processIMPSTransfer(
             beneficiaryBank,
             data.txnId
           );
+
           return;
         } else if (key.includes("imps-transfer-debit-remitter-success")) {
           console.log("Remitter Debited");
@@ -185,18 +257,20 @@ export async function processIMPSTransfer(
           if (!state) {
             console.log("State not found");
             return;
-          } 
+          }
           await creditToBeneficiary(
             topic,
             state.remitterBank,
             state.beneficiaryBank,
             data.txnId
           );
+
           return;
         } else if (key.includes("imps-transfer-credit-benificiary-success")) {
           console.log("Beneficiary Credited");
           const res = JSON.parse(value);
           console.log("Transaction is complete: ", res);
+
           return;
         }
         break;

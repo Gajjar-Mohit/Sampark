@@ -1,15 +1,13 @@
 import { kafka } from "..";
 import { registeredBanks } from "../core/registered-banks";
 import { processIMPSTransfer } from "../core/services/imps-state-manager";
-import { forwardToBank  } from "../egress/forward-to-banks";
+import { forwardToBank } from "../egress/forward-to-banks";
 
 export async function listenForRequests() {
   try {
     const consumerPromises = registeredBanks.map((bank) =>
       listenFromBank(bank.bankToNTHGroup, bank.bankToNTH)
     );
-
-    // Start all consumers concurrently
     await Promise.all(consumerPromises);
     console.log("All bank listeners started successfully");
   } catch (error) {
