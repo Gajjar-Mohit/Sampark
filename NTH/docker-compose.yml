@@ -33,6 +33,21 @@ services:
     networks:
       - kafka-network
 
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-stack
+    ports:
+      - "6379:6379"  # Redis server port
+      - "8001:8001"  # RedisInsight web UI port
+    networks:
+      - kafka-network
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
 networks:
   kafka-network:
     driver: bridge
+
+volumes:
+  redis-data:
