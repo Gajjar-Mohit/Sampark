@@ -40,7 +40,7 @@ export const createAccount = async (
       ifscCode,
       branchName,
       accountNo,
-      mmid
+      mmid,
     },
   });
 
@@ -48,13 +48,15 @@ export const createAccount = async (
 };
 
 export const getAccountByContactNo = async (
-  contactNo: string,
+  accountNo: string,
+  ifscCode: string,
   requestedBy: string,
   txnId: string
 ) => {
   const account = await prisma.bankAccount.findFirst({
     where: {
-      accountHolderContactNo: contactNo,
+      accountNo: accountNo,
+      ifscCode: ifscCode,
     },
   });
 

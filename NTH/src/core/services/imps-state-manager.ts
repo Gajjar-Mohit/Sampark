@@ -233,7 +233,7 @@ export async function processIMPSTransfer(
           beneficiaryBank = {
             accountNo: res.accountNo,
             ifscCode: res.ifscCode,
-            contactNo: res.contactNo,
+            contactNo: res.accountHolderContactNo,
             mmid: res.mmid,
             amount: res.amount,
           };
@@ -246,7 +246,7 @@ export async function processIMPSTransfer(
           await debitFromRemitter(
             topic,
             state.remitterBank,
-            beneficiaryBank,
+            state.beneficiaryBank,
             data.txnId
           );
 

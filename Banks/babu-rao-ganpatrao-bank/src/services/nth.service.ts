@@ -1,5 +1,7 @@
 import { kafka } from "..";
 import { getAccountByContactNo } from "./account.service";
+import { creditBankAccount, debitBankAccount } from "./imps.service";
+import { storeTransaction } from "./transaction.service";
 
 export async function listernForNTH() {
   const consumer = kafka.consumer({ groupId: "NTH-to-654321-group" });
@@ -20,11 +22,12 @@ export async function listernForNTH() {
       }
       console.log(key, value);
 
-      if (key.includes("verify-details")) {
+      if (key.includes("imps-transfer-verify-details")) {
         console.log("Verify details received");
         const details = JSON.parse(value);
         const account = await getAccountByContactNo(
-          details.contactNo,
+          details.accountNo,
+          details.ifscCode,
           details.requestedBy,
           details.txnId
         );
@@ -35,12 +38,6 @@ export async function listernForNTH() {
         await sendResponseToNTH(JSON.stringify(account));
         return;
       }
-      if (key.includes("account-details")) {
-        // console.log("Account details received");
-        await sendResponseToNTH(value);
-        return;
-      }
-
       if (message.key?.toString().includes("imps-transfer-debit-remitter")) {
         await debitRequest(message.value?.toString() || "");
         return;
@@ -56,8 +53,24 @@ export async function listernForNTH() {
 }
 
 async function debitRequest(details: any) {
-  //TODO: debit from the account
   console.log("Details received for debit: ", details);
+  const data = JSON.parse(details);
+  const { remitterDetails, beneficiaryDetails } = data;
+  const { accountNo, ifscCode, contactNo } = remitterDetails;
+  const amount = Number.parseFloat(remitterDetails.amount);
+  const result = await debitBankAccount(accountNo, ifscCode, contactNo, amount);
+  const txSaveed = await storeTransaction(
+    data.txnId,
+    amount,
+    "DEBIT",
+    remitterDetails.accountNo,
+    "IMPS/" + beneficiaryDetails.accountNo
+  );
+  console.log("Transaction saved: ", txSaveed);
+  if (!result.success) {
+    console.error("Error debiting bank account:" + result);
+    return;
+  }
   const producer = kafka.producer();
   await producer.connect();
   console.log("Sending response to nth");
@@ -73,9 +86,30 @@ async function debitRequest(details: any) {
 }
 
 async function creditRequest(details: any) {
-  //debit from the account
   console.log("Details received for credit: ", details);
-
+  const data = JSON.parse(details);
+  console.log(data);
+  const { remitterDetails, beneficiaryDetails } = data;
+  const { accountNo, ifscCode, contactNo } = beneficiaryDetails;
+  const amount = Number.parseFloat(remitterDetails.amount);
+  const result = await creditBankAccount(
+    accountNo,
+    ifscCode,
+    contactNo,
+    amount
+  );
+  const txSaveed = await storeTransaction(
+    data.txnId,
+    amount,
+    "CREDIT",
+    remitterDetails.accountNo,
+    "IMPS/" + beneficiaryDetails.accountNo
+  );
+  console.log("Transaction saved: ", txSaveed);
+  if (!result.success) {
+    console.error("Error debiting bank account:" + result);
+    return;
+  }
   const producer = kafka.producer();
   await producer.connect();
   console.log("Sending response to nth");
@@ -92,14 +126,14 @@ async function creditRequest(details: any) {
 
 async function sendResponseToNTH(accountDetails: string) {
   const producer = kafka.producer();
-  console.log("Connecting 654321-to-NTH");
+  console.log("Connecting 789456-to-NTH");
   await producer.connect();
-  console.log("654321-to-NTH Connected Successfully");
+  console.log("Sending response to NTH");
   await producer.send({
-    topic: "654321-to-NTH",
+    topic: "789456-to-NTH",
     messages: [
       {
-        key: "account-details",
+        key: "imps-transfer-verified-details",
         value: accountDetails,
       },
     ],

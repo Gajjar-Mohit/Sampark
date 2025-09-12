@@ -42,7 +42,8 @@ model BankAccount {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  Card Card[]
+  Card        Card[]
+  Transactions Transaction[]
 }
 
 model Branch {
@@ -65,4 +66,16 @@ model Card {
   expiryDate    DateTime
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+}
+
+model Transaction {
+  id            String      @id @default(uuid())
+  amount        Int
+  account       BankAccount @relation(fields: [accountId], references: [id])
+  accountId     String
+  transactionId String
+  description   String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  mode          String
 }

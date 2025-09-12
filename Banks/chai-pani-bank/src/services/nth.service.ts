@@ -1,18 +1,41 @@
 import { kafka } from "..";
-import { getAccount, getAccountByAccountNo } from "./account.service";
+import { getAccountByContactNo } from "./account.service";
+import { creditBankAccount, debitBankAccount } from "./imps.service";
+import { storeTransaction } from "./transaction.service";
 
 export async function listernForNTH() {
   const consumer = kafka.consumer({ groupId: "NTH-to-789456-group" });
   await consumer.connect();
 
-  await consumer.subscribe({ topics: ["NTH-to-789456"] });
+  await consumer.subscribe({
+    topics: ["NTH-to-789456"],
+  });
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
-      console.log(`[${topic}]: PART:${partition}:`, message.value?.toString());
+      const key = message.key?.toString() ?? "";
+      const value = message.value?.toString() ?? "";
+      if (!key || !value) {
+        console.warn("Invalid message received");
+        await sendNotFoundResponseToNTH();
+        return;
+      }
+      console.log(key, value);
 
-      if (message.key?.toString().includes("imps-transfer-verify-details")) {
-        await verifyIMPSTransfer(message.value?.toString() || "");
+      if (key.includes("imps-transfer-verify-details")) {
+        console.log("Verify details received");
+        const details = JSON.parse(value);
+        const account = await getAccountByContactNo(
+          details.accountNo,
+          details.ifscCode,
+          details.requestedBy,
+          details.txnId
+        );
+        if (!account) {
+          await sendNotFoundResponseToNTH();
+          return;
+        }
+        await sendResponseToNTH(JSON.stringify(account));
         return;
       }
       if (message.key?.toString().includes("imps-transfer-debit-remitter")) {
@@ -29,22 +52,78 @@ export async function listernForNTH() {
   });
 }
 
-export async function verifyIMPSTransfer(details: string) {
-  console.log("Details received: ", details);
+async function debitRequest(details: any) {
+  console.log("Details received for debit: ", details);
   const data = JSON.parse(details);
-  const { ifscCode, accountNo, txnId } = data;
-  if (!ifscCode || !accountNo || !txnId) {
-    await sendErrorResponseToNTH("Missing details");
+  const { remitterDetails, beneficiaryDetails } = data;
+  const { accountNo, ifscCode, contactNo } = remitterDetails;
+  const amount = Number.parseFloat(remitterDetails.amount);
+  const result = await debitBankAccount(accountNo, ifscCode, contactNo, amount);
+  const txSaveed = await storeTransaction(
+    data.txnId,
+    amount,
+    "DEBIT",
+    remitterDetails.accountNo,
+    "IMPS/" + beneficiaryDetails.accountNo
+  );
+  console.log("Transaction saved: ", txSaveed);
+  if (!result.success) {
+    console.error("Error debiting bank account:" + result);
     return;
   }
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending response to nth");
+  await producer.send({
+    topic: "789456-to-NTH",
+    messages: [
+      {
+        key: "imps-transfer-debit-remitter-success",
+        value: details,
+      },
+    ],
+  });
+}
 
-  const account = await getAccountByAccountNo(accountNo);
-  if (!account) {
-    await sendErrorResponseToNTH("Account not found");
+async function creditRequest(details: any) {
+  console.log("Details received for credit: ", details);
+  const data = JSON.parse(details);
+  const { remitterDetails, beneficiaryDetails } = data;
+  const { accountNo, ifscCode, contactNo } = beneficiaryDetails;
+  console.log("Account No" + accountNo);
+  console.log("ifsc No" + ifscCode);
+  console.log("Contact No" + contactNo);
+  const amount = Number.parseFloat(remitterDetails.amount);
+  const result = await creditBankAccount(
+    accountNo,
+    ifscCode,
+    contactNo,
+    amount
+  );
+  const txSaveed = await storeTransaction(
+    data.txnId,
+    amount,
+    "CREDIT",
+    beneficiaryDetails.accountNo,
+    "IMPS/" + beneficiaryDetails.accountNo
+  );
+  console.log("Transaction saved: ", txSaveed);
+  if (!result.success) {
+    console.error("Error debiting bank account:" + result);
     return;
   }
-  await sendResponseToNTH(JSON.stringify({ ...account, txnId }));
-  return;
+  const producer = kafka.producer();
+  await producer.connect();
+  console.log("Sending response to nth");
+  await producer.send({
+    topic: "789456-to-NTH",
+    messages: [
+      {
+        key: "imps-transfer-credit-benificiary-success",
+        value: details,
+      },
+    ],
+  });
 }
 
 async function sendResponseToNTH(accountDetails: string) {
@@ -63,7 +142,7 @@ async function sendResponseToNTH(accountDetails: string) {
   });
 }
 
-async function sendErrorResponseToNTH(error: string) {
+async function sendNotFoundResponseToNTH() {
   const producer = kafka.producer();
   console.log("Connecting 789456-to-NTH");
   await producer.connect();
@@ -72,43 +151,24 @@ async function sendErrorResponseToNTH(error: string) {
     topic: "789456-to-NTH",
     messages: [
       {
-        key: "imps-transfer-error",
-        value: error,
+        key: "account-details",
+        value: "Not Found",
       },
     ],
   });
 }
 
-async function debitRequest(details: any) {
-  //debit from the account
-  console.log("Details received for debit: ", details);
+export async function initiateIMPSTransfer(details: any) {
   const producer = kafka.producer();
+  console.log("Connecting 789456-to-NTH");
   await producer.connect();
-  console.log("Sending response to nth");
+  console.log("789456-to-NTH Connected Successfully");
   await producer.send({
     topic: "789456-to-NTH",
     messages: [
       {
-        key: "imps-transfer-debit-remitter-success",
-        value: details,
-      },
-    ],
-  });
-}
-
-async function creditRequest(details: any) {
-  //debit from the account
-  console.log("Details received for credit: ", details);
-
-  const producer = kafka.producer();
-  await producer.connect();
-  console.log("Sending response to nth");
-  await producer.send({
-    topic: "789456-to-NTH",
-    messages: [
-      {
-        key: "imps-transfer-credit-benificiary-success",
-        value: details,
+        key: "imps-transfer",
+        value: JSON.stringify(details),
       },
     ],
   });

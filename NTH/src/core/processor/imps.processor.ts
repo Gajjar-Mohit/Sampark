@@ -92,7 +92,6 @@ export async function debitFromRemitter(
   txnId: string
 ) {
   console.log("Debiting from remitter");
-
   const remitterBank = registeredBanks.find(
     (bank) => bank.ifscCodePrefix === remitterDetails.ifscCode.substring(0, 3)
   );
@@ -112,8 +111,8 @@ export async function debitFromRemitter(
       {
         key: "imps-transfer-debit-remitter",
         value: JSON.stringify({
-          ...remitterDetails,
-          ...beneficiaryDetails,
+          remitterDetails: remitterDetails,
+          beneficiaryDetails: beneficiaryDetails,
           txnId: txnId,
         }),
       },
@@ -147,8 +146,8 @@ export async function creditToBeneficiary(
       {
         key: "imps-transfer-credit-beneficiary",
         value: JSON.stringify({
-          ...remitterDetails,
-          ...beneficiaryDetails,
+          remitterDetails: remitterDetails,
+          beneficiaryDetails: beneficiaryDetails,
           txnId: txnId,
         }),
       },

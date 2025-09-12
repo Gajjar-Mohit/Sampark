@@ -81,45 +81,6 @@ async function processIncomingMessage(
       await processIMPSTransfer(topic, key, value);
       return;
     }
-
-    if (key.includes("account-details")) {
-      console.log("Account details received");
-      const res = JSON.parse(value);
-      await forwardToBank(res.accountDetails.requestedBy, key, value);
-      return;
-    }
-
-    // Find which bank this message is from based on topic name
-    const sourceBank = registeredBanks.find((bank) => bank.bankToNTH === topic);
-
-    if (!sourceBank) {
-      console.warn(`Unknown source bank for topic: ${topic}`);
-      return;
-    }
-
-    const ifscCode = JSON.parse(value).ifscCode;
-    const contactNo = JSON.parse(value).contactNo;
-    const desticationBank = registeredBanks.find(
-      (bank) => bank.ifscCodePrefix === ifscCode.substring(0, 3)
-    );
-    if (!desticationBank) {
-      console.warn(`Unknown destination bank for ifscCode: ${key}`);
-      return;
-    }
-
-    const verifyDetails = JSON.stringify({
-      ifscCode,
-      contactNo,
-      requestedBy: sourceBank.nthToBank,
-    });
-    const res = await forwardToBank(
-      desticationBank.nthToBank,
-      "verify-details",
-      verifyDetails
-    );
-    console.log(res);
-    console.log(`Successfully processed message from ${sourceBank.name}`);
-    console.log(`Successfully forwarded to ${desticationBank?.name}`);
   } catch (error) {
     console.error(`Error processing message for topic ${topic}:`, error);
     throw error;
