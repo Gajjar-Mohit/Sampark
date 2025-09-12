@@ -49,7 +49,8 @@ export const createAccount = async (
 
 export const getAccountByContactNo = async (
   contactNo: string,
-  requestedBy: string
+  requestedBy: string,
+  txnId: string
 ) => {
   const account = await prisma.bankAccount.findFirst({
     where: {
@@ -64,6 +65,7 @@ export const getAccountByContactNo = async (
   return {
     ...account,
     requestedBy,
+    txnId,
   };
 };
 

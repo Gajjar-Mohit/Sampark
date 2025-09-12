@@ -32,8 +32,8 @@ export async function listernForNTH() {
 export async function verifyIMPSTransfer(details: string) {
   console.log("Details received: ", details);
   const data = JSON.parse(details);
-  const { ifscCode, accountNo } = data;
-  if (!ifscCode || !accountNo) {
+  const { ifscCode, accountNo, txnId } = data;
+  if (!ifscCode || !accountNo || !txnId) {
     await sendErrorResponseToNTH("Missing details");
     return;
   }
@@ -43,7 +43,7 @@ export async function verifyIMPSTransfer(details: string) {
     await sendErrorResponseToNTH("Account not found");
     return;
   }
-  await sendResponseToNTH(JSON.stringify(account));
+  await sendResponseToNTH(JSON.stringify({ ...account, txnId }));
   return;
 }
 
@@ -90,7 +90,7 @@ async function debitRequest(details: any) {
     messages: [
       {
         key: "imps-transfer-debit-remitter-success",
-        value: JSON.stringify(details),
+        value: details,
       },
     ],
   });
@@ -108,7 +108,7 @@ async function creditRequest(details: any) {
     messages: [
       {
         key: "imps-transfer-credit-benificiary-success",
-        value: JSON.stringify(details),
+        value: details,
       },
     ],
   });

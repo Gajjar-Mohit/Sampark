@@ -1,6 +1,6 @@
 import { kafka } from "..";
 
-export async function forwardToBanks(
+export async function forwardToBank(
   iinNo: string,
   key: string,
   value: string

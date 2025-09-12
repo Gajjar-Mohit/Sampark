@@ -25,7 +25,8 @@ export async function listernForNTH() {
         const details = JSON.parse(value);
         const account = await getAccountByContactNo(
           details.contactNo,
-          details.requestedBy
+          details.requestedBy,
+          details.txnId
         );
         if (!account) {
           await sendNotFoundResponseToNTH();
@@ -55,7 +56,7 @@ export async function listernForNTH() {
 }
 
 async function debitRequest(details: any) {
-  //debit from the account
+  //TODO: debit from the account
   console.log("Details received for debit: ", details);
   const producer = kafka.producer();
   await producer.connect();
@@ -65,7 +66,7 @@ async function debitRequest(details: any) {
     messages: [
       {
         key: "imps-transfer-debit-remitter-success",
-        value: JSON.stringify(details),
+        value: details,
       },
     ],
   });
@@ -83,7 +84,7 @@ async function creditRequest(details: any) {
     messages: [
       {
         key: "imps-transfer-credit-benificiary-success",
-        value: JSON.stringify(details),
+        value: details,
       },
     ],
   });

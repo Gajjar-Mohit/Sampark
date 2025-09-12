@@ -1,15 +1,17 @@
 services:
-
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "ERROR"
     # ports:
     #   - "2181:2181"
     networks:
       - kafka-network
+    logging:
+      driver: "none"
 
   kafka:
     image: confluentinc/cp-kafka:6.2.0
@@ -29,7 +31,10 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
-
+      # Log level controls
+      KAFKA_LOG4J_LOGGERS: "kafka.coordinator.group.GroupMetadataManager=ERROR,state.change.logger=ERROR,kafka.log.LogCleaner=ERROR,kafka.controller=ERROR"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
     networks:
       - kafka-network
     healthcheck:
@@ -64,6 +69,10 @@ services:
       NODE_ENV: production
       KAFKA_BASEURL: kafka:9092
       REDIS_URL: redis://redis-stack:6379
+      REDIS_HOST: redis-stack
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
     depends_on:
       kafka:
         condition: service_healthy
@@ -107,7 +116,6 @@ services:
       POSTGRES_DB: chai-pani-db
       POSTGRES_USER: chai-pani_user
       POSTGRES_PASSWORD: chai-pani_password
-
     volumes:
       - postgres_chai-pani_data:/var/lib/postgresql/data
     networks:
@@ -154,7 +162,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   babu-rao-ganpatrao-bank-service:
     build:
       context: ./banks/babu-rao-ganpatrao-bank
@@ -173,7 +180,6 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
     networks:
       - babu-rao-ganpatrao-bank-network
       - kafka-network
@@ -220,7 +226,6 @@ services:
         bun run seed &&
         bun run src/index.ts
       "
-      
 
   chinta-mat-karo-service:
     build:

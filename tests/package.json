@@ -1,0 +1,21 @@
+{
+  "name": "tests",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_NO_WARNINGS=1 bun src/index.ts",
+    "start": "bun index.ts",
+    "build": "bun install --production"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/axios": "^0.14.4",
+    "axios": "^1.12.0"
+  }
+}

@@ -1,3 +1,4 @@
-import { createConnections } from "./admin/create-topics";
+import { createConnections } from "./core/create-topics";
+
 
 await createConnections();
