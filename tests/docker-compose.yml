@@ -1,0 +1,9 @@
+services:
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: test-run 
+    command: ["bun", "test"]
+    network_mode: host

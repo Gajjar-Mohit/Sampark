@@ -178,6 +178,86 @@ const bankAccountRequests = [
     accountHolderContactNo: "4654321098",
     panCardNo: "VWXYZ3456A",
   },
+  {
+    accountHolderName: "Alok Sharma",
+    accountHolderContactNo: "3543210987",
+    panCardNo: "ABCDE5678F",
+  },
+  {
+    accountHolderName: "Tina Deshmukh",
+    accountHolderContactNo: "2432109876",
+    panCardNo: "FGHIJ9012K",
+  },
+  {
+    accountHolderName: "Harsh Vardhan",
+    accountHolderContactNo: "1321098765",
+    panCardNo: "LMNOP3456Q",
+  },
+  {
+    accountHolderName: "Bhavna Kapoor",
+    accountHolderContactNo: "9213456780",
+    panCardNo: "RSTUV7890W",
+  },
+  {
+    accountHolderName: "Karan Malhotra",
+    accountHolderContactNo: "8123456790",
+    panCardNo: "XYZAB1234C",
+  },
+  {
+    accountHolderName: "Divya Sen",
+    accountHolderContactNo: "7034567891",
+    panCardNo: "DEFGH5678I",
+  },
+  {
+    accountHolderName: "Amitabh Joshi",
+    accountHolderContactNo: "6945678902",
+    panCardNo: "JKLMN9012O",
+  },
+  {
+    accountHolderName: "Nalini Rao",
+    accountHolderContactNo: "5856789013",
+    panCardNo: "PQRST3456U",
+  },
+  {
+    accountHolderName: "Farhan Qureshi",
+    accountHolderContactNo: "4767890124",
+    panCardNo: "VWXYZ7890A",
+  },
+  {
+    accountHolderName: "Chitra Anand",
+    accountHolderContactNo: "3678901235",
+    panCardNo: "BCDEF1234G",
+  },
+  {
+    accountHolderName: "Ritika Mehra",
+    accountHolderContactNo: "2589012346",
+    panCardNo: "GHIJK5678L",
+  },
+  {
+    accountHolderName: "Ayaan Shaikh",
+    accountHolderContactNo: "1490123457",
+    panCardNo: "MNOPQ9012R",
+  },
+  {
+    accountHolderName: "Simran Kaur",
+    accountHolderContactNo: "9301234568",
+    panCardNo: "STUVW3456X",
+  },
+  {
+    accountHolderName: "Tarun Bhatia",
+    accountHolderContactNo: "8212345679",
+    panCardNo: "YZABC7890D",
+  },
+  {
+    accountHolderName: "Rahul Sharma",
+    accountHolderContactNo: "7123456780",
+    panCardNo: "EFGHI5678J",
+  },
+  {
+    accountHolderName: "Anjali Kumar",
+    accountHolderContactNo: "6034567891",
+    panCardNo: "KLMNO3456P",
+  },
 ];
 
 let allCreatedAccounts: any[] = [];
