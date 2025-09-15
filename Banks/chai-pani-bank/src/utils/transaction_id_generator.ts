@@ -11,7 +11,7 @@ const BANK_REVERSE_MAP = Object.fromEntries(
 );
 
 export function generateTransactionId(
-  bankCode: keyof typeof BANK_CODES = "BRG"
+  bankCode: keyof typeof BANK_CODES = "CPB"
 ): string {
   const date = new Date();
 

@@ -1,6 +1,6 @@
 export function generateMMID() {
   const length = 3;
-  const prefix = "0003";
+  const prefix = "0001";
   if (length <= 0) {
     return "";
   }

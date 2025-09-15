@@ -100,14 +100,14 @@ async function creditRequest(details: any) {
     contactNo,
     amount
   );
-  const txSaveed = await storeTransaction(
+  const saveTxResponse = await storeTransaction(
     data.txnId,
     amount,
     "CREDIT",
     beneficiaryDetails.accountNo,
     "IMPS/" + beneficiaryDetails.accountNo
   );
-  console.log("Transaction saved: ", txSaveed);
+  console.log("Transaction saved: ", saveTxResponse);
   if (!result.success) {
     console.error("Error debiting bank account:" + result);
     return;

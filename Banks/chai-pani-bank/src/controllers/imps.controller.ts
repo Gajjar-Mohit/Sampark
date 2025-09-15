@@ -90,7 +90,7 @@ export const initiateIMPSTransferController = async (
     const request = {
       ...parsedBody.data,
       txnId,
-      replyTo: "NTH-to-654321",
+      replyTo: "NTH-to-789456",
     };
 
     const remitter = await checkRemitterDetails(
