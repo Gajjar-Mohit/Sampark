@@ -7,6 +7,7 @@ export const registeredBanks = [
     nthToBankGroup: "NTH-to-456123-group",
     bankToNTHGroup: "456123-to-NTH-group",
     name: "Chinta Mat Karo Bank",
+    mmidPrefix: "0000" 
   },
   {
     ifscCodePrefix: "CPB",
@@ -16,6 +17,7 @@ export const registeredBanks = [
     nthToBankGroup: "NTH-to-789456-group",
     bankToNTHGroup: "789456-to-NTH-group",
     name: "Chai Pani Bank",
+    mmidPrefix: "0001"
   },
   {
     ifscCodePrefix: "PVB",
@@ -25,6 +27,7 @@ export const registeredBanks = [
     nthToBankGroup: "NTH-to-321987-group",
     bankToNTHGroup: "321987-to-NTH-group",
     name: "Paisa Vasool Bank",
+    mmidPrefix: "0002"
   },
   {
     ifscCodePrefix: "BRG",
@@ -34,5 +37,6 @@ export const registeredBanks = [
     nthToBankGroup: "NTH-to-654321-group",
     bankToNTHGroup: "654321-to-NTH-group",
     name: "Babu Rao Ganpatrao Bank",
+    mmidPrefix: "0003"
   },
 ];

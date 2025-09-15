@@ -1,9 +1,7 @@
 import prisma from "../db";
 import { generateBankAccountNumber } from "../utils/account_number_genrator";
-import { generateCardNumber } from "../utils/card_number_generator";
-import { generateCardPin } from "../utils/card_ping_generator";
-import { generateCardValidityDate } from "../utils/card_validity_date_generator";
 import { CustomError } from "../utils/error_handler";
+import { generateMMID } from "../utils/mmid_generator";
 
 export const createAccount = async (
   accountHolderName: string,
@@ -15,6 +13,7 @@ export const createAccount = async (
   const branchIndex = Math.floor(Math.random() * getIfscCode.length);
   const ifscCode = getIfscCode[branchIndex]?.code;
   const branchName = getIfscCode[branchIndex]?.name;
+  const mmid = generateMMID();
 
   if (!accountNo) {
     throw new CustomError("Account number not found", 400);
@@ -27,6 +26,11 @@ export const createAccount = async (
   if (!branchName) {
     throw new CustomError("Branch name not found", 400);
   }
+
+  if (!mmid) {
+    throw new CustomError("MMID not found", 400);
+  }
+
   const account = await prisma.bankAccount.create({
     data: {
       accountHolderName,
@@ -35,11 +39,48 @@ export const createAccount = async (
       ifscCode,
       branchName,
       accountNo,
+      mmid,
     },
   });
 
   return account;
 };
+
+export const getAccountByMMID = async (mmid: string, contactNo: string) => {
+  return await prisma.bankAccount.findFirst({
+    where: {
+      mmid,
+      accountHolderContactNo: contactNo,
+    },
+  });
+};
+
+export const getAccountByAccountNo = async (
+  accountNo: string,
+  ifscCode: string,
+  contactNo: string
+) => {
+  const account = await prisma.bankAccount.findFirst({
+    where: {
+      accountNo: accountNo,
+      ifscCode: ifscCode,
+      accountHolderContactNo: contactNo,
+    },
+  });
+
+  if (!account) {
+    throw new CustomError("Account is not registered", 400);
+  }
+
+  return {
+    accountNo: account.accountNo,
+    ifscCode: account.ifscCode,
+    balance: account.balance,
+    accountHolderName: account.accountHolderName,
+    accountHolderContactNo: account.accountHolderContactNo,
+  };
+};
+
 
 export const getAccount = async (id: string) => {
   return await prisma.bankAccount.findUnique({
@@ -68,4 +109,27 @@ export const deleteAccount = async (id: string) => {
       id,
     },
   });
+};
+export const getAccountByContactNo = async (
+  contactNo: string,
+  ifscCode: string,
+  requestedBy: string,
+  txnId: string
+) => {
+  const account = await prisma.bankAccount.findFirst({
+    where: {
+      accountNo: contactNo,
+      ifscCode: ifscCode,
+    },
+  });
+
+  if (!account) {
+    throw new CustomError("Contact is not registered", 400);
+  }
+
+  return {
+    ...account,
+    requestedBy,
+    txnId,
+  };
 };

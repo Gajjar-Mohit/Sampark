@@ -1,0 +1,21 @@
+{
+  "name": "tests",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/axios": "^0.14.4",
+    "@types/jest": "^30.0.0",
+    "axios": "^1.12.0",
+    "jest": "^30.1.3"
+  }
+}

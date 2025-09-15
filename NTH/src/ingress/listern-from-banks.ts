@@ -1,15 +1,13 @@
 import { kafka } from "..";
 import { registeredBanks } from "../core/registered-banks";
-import { forwardToBanks } from "../egress/forward-to-banks";
+import { processIMPSTransfer } from "../core/services/imps-state-manager";
+import { forwardToBank } from "../egress/forward-to-banks";
 
 export async function listenForRequests() {
   try {
-    // Create consumers for each bank's incoming messages
     const consumerPromises = registeredBanks.map((bank) =>
       listenFromBank(bank.bankToNTHGroup, bank.bankToNTH)
     );
-
-    // Start all consumers concurrently
     await Promise.all(consumerPromises);
     console.log("All bank listeners started successfully");
   } catch (error) {
@@ -78,57 +76,13 @@ async function processIncomingMessage(
   value: string
 ) {
   try {
-    console.log(
-      `Processing message - Topic: ${topic}, KEY: ${key}, VALUE: ${value}`
-    );
-
-    if (key.includes("account-details")) {
-      console.log("Account details received");
-      const res = JSON.parse(value);
-      await forwardToBanks(res.accountDetails.requestedBy, key, value);
+    if (key.includes("imps-transfer")) {
+      console.log("IMPS transfer details received");
+      await processIMPSTransfer(topic, key, value);
       return;
     }
-
-    // Find which bank this message is from based on topic name
-    const sourceBank = registeredBanks.find((bank) => bank.bankToNTH === topic);
-
-    if (!sourceBank) {
-      console.warn(`Unknown source bank for topic: ${topic}`);
-      return;
-    }
-
-    const ifscCode = JSON.parse(value).ifscCode;
-    const contactNo = JSON.parse(value).contactNo;
-    const desticationBank = registeredBanks.find(
-      (bank) => bank.ifscCodePrefix === ifscCode.substring(0, 3)
-    );
-    if (!desticationBank) {
-      console.warn(`Unknown destination bank for ifscCode: ${key}`);
-      return;
-    }
-
-    const verifyDetails = JSON.stringify({
-      ifscCode,
-      contactNo,
-      requestedBy: sourceBank.nthToBank,
-    });
-    const res = await forwardToBanks(
-      desticationBank.nthToBank,
-      "verify-details",
-      verifyDetails
-    );
-    console.log(res);
-    console.log(`Successfully processed message from ${sourceBank.name}`);
-    console.log(`Successfully forwarded to ${desticationBank?.name}`);
   } catch (error) {
     console.error(`Error processing message for topic ${topic}:`, error);
     throw error;
   }
-}
-
-// Graceful shutdown function
-export async function shutdownListeners() {
-  console.log("Shutting down bank listeners...");
-  // Implementation depends on how you track active consumers
-  // You might want to maintain a list of active consumers for proper cleanup
 }
