@@ -18,3 +18,8 @@ export const CreateAccountRequest = z.object({
   accountHolderContactNo: z.string(),
   panCardNo: z.string(),
 });
+export const CheckBalanceRequest = z.object({
+  ifscCode: z.string(),
+  accountHolderContactNo: z.string(),
+  accountNo: z.string(),
+});

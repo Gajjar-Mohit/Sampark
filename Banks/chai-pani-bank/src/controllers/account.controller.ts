@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { CreateAccountRequest } from "../types/account";
-import { createAccount } from "../services/account.service";
+import { CheckBalanceRequest, CreateAccountRequest } from "../types/account";
+import { createAccount, getAccountByAccountNo } from "../services/account.service";
 export const createAccountController = async (req: Request, res: Response) => {
   const parsedBody = CreateAccountRequest.safeParse(req.body);
   if (!parsedBody.success) {
@@ -19,6 +19,27 @@ export const createAccountController = async (req: Request, res: Response) => {
   return res.status(200).json({
     status: "Success",
     message: "Account created successfully",
+    data: response,
+  });
+};
+export const checkBalanceController = async (req: Request, res: Response) => {
+  const parsedBody = CheckBalanceRequest.safeParse(req.body);
+  if (!parsedBody.success) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid request body",
+    });
+  }
+
+  const response = await getAccountByAccountNo(
+    parsedBody.data.accountNo,
+    parsedBody.data.ifscCode,
+    parsedBody.data.accountHolderContactNo
+  );
+
+  return res.status(200).json({
+    status: "Success",
+    message: "Account balance fetched successfully",
     data: response,
   });
 };

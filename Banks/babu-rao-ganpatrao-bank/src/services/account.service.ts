@@ -71,6 +71,32 @@ export const getAccountByContactNo = async (
   };
 };
 
+export const getAccountByAccountNo = async (
+  accountNo: string,
+  ifscCode: string,
+  contactNo: string
+) => {
+  const account = await prisma.bankAccount.findFirst({
+    where: {
+      accountNo: accountNo,
+      ifscCode: ifscCode,
+      accountHolderContactNo: contactNo,
+    },
+  });
+
+  if (!account) {
+    throw new CustomError("Account is not registered", 400);
+  }
+
+  return {
+    accountNo: account.accountNo,
+    ifscCode: account.ifscCode,
+    balance: account.balance,
+    accountHolderName: account.accountHolderName,
+    accountHolderContactNo: account.accountHolderContactNo,
+  };
+};
+
 export const getAccount = async (id: string) => {
   return await prisma.bankAccount.findUnique({
     where: {

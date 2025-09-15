@@ -6,10 +6,6 @@ import {
   PAISA_VASUL_BANK_URL,
 } from "../config/baseurls";
 
-function sum(a: number, b: number) {
-  return a + b;
-}
-
 const bankAccountRequests = [
   {
     accountHolderName: "Ravi Nair",
@@ -73,7 +69,7 @@ const bankAccountRequests = [
   },
 ];
 
-describe("Bank Accounts Creation", () => {
+describe("Bank Account Creation", () => {
   for (const bankAccountRequest of bankAccountRequests) {
     test(`Bank: Chinta Mat Karo Bank, Account Creator: ${bankAccountRequest.accountHolderName}`, async () => {
       const response = await createAccountInChintaMatKaroBank(
