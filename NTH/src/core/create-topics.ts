@@ -36,8 +36,3 @@ export async function createConnections() {
     console.error("Error during Kafka admin operations:", error);
   }
 }
-
-// Creating channel for bank  Chinta Mat Karo Bank 456123-to-NTH NTH-to-456123
-// Creating channel for bank  Chai Pani Bank 789456-to-NTH NTH-to-789456
-// Creating channel for bank  Paisa Vasool Bank 321987-to-NTH NTH-to-321987
-// Creating channel for bank  Babu Rao Ganpatrao Bank 654321-to-NTH NTH-to-654321

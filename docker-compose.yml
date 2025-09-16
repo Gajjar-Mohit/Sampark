@@ -175,6 +175,11 @@ services:
       DATABASE_URL: postgresql://babu-rao-ganpatrao-bank_user:babu-rao-ganpatrao-bank_password@babu-rao-ganpatrao-bank-db:5432/babu-rao-ganpatrao-bank_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
+      REDIS_URL: redis://babu-rao-ganpatrao-bank-redis-stack:6379
+      REDIS_HOST: babu-rao-ganpatrao-bank-redis-stack
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
     depends_on:
       babu-rao-ganpatrao-bank-db:
         condition: service_healthy
@@ -193,7 +198,6 @@ services:
         bun run seed &&
         bun run src/index.ts
       "
-
   # Express App for Project 2
   chai-pani-service:
     build:
@@ -208,6 +212,11 @@ services:
       DATABASE_URL: postgresql://chai-pani_user:chai-pani_password@chai-pani-db:5432/chai-pani-db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
+      REDIS_URL: redis://chai-pani-redis-stack:6379
+      REDIS_HOST: chai-pani-redis-stack
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
     depends_on:
       chai-pani-db:
         condition: service_healthy
@@ -240,6 +249,11 @@ services:
       DATABASE_URL: postgresql://chinta-mat-karo_user:chinta-mat-karo_password@chinta-mat-karo-db:5432/chinta-mat-karo_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
+      REDIS_URL: redis://chinta-mat-karo-redis-stack:6379
+      REDIS_HOST: chinta-mat-karo-redis-stack
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
     depends_on:
       chinta-mat-karo-db:
         condition: service_healthy
@@ -272,6 +286,11 @@ services:
       DATABASE_URL: postgresql://paisa-vasool-bank_user:paisa-vasool-bank_password@paisa-vasool-bank-db:5432/paisa-vasool-bank_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
+      REDIS_URL: redis://paisa-vasool-bank-redis-stack:6379
+      REDIS_HOST: paisa-vasool-bank-redis-stack
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
     depends_on:
       paisa-vasool-bank-db:
         condition: service_healthy
@@ -291,6 +310,67 @@ services:
         bun run src/index.ts
       "
 
+  babu-rao-ganpatrao-bank-redis-stack:
+    image: redis/redis-stack:latest
+    container_name: babu-rao-ganpatrao-bank-redis-stack
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "6380:6379"  # Redis server port
+      - "8002:8001"  # RedisInsight web UI port
+    networks:
+      - babu-rao-ganpatrao-bank-network
+    restart: unless-stopped
+    volumes:
+      - babu-rao-ganpatrao-bank-redis-data:/data
+
+  chai-pani-redis-stack:
+    image: redis/redis-stack:latest
+    container_name: chai-pani-redis-stack
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "6381:6379"  # Redis server port
+      - "8003:8001"  # RedisInsight web UI port
+    networks:
+      - chai-pani-network
+    restart: unless-stopped
+    volumes:
+      - chai-pani-redis-data:/data
+
+  chinta-mat-karo-redis-stack:
+    image: redis/redis-stack:latest
+    container_name: chinta-mat-karo-redis-stack
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "6382:6379"  # Redis server port
+      - "8004:8001"  # RedisInsight web UI port
+    networks:
+      - chinta-mat-karo-network
+    restart: unless-stopped
+    volumes:
+      - chinta-mat-karo-redis-data:/data
+
+  paisa-vasool-bank-redis-stack:
+    image: redis/redis-stack:latest
+    container_name: paisa-vasool-bank-redis-stack
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "6383:6379"  # Redis server port
+      - "8005:8001"  # RedisInsight web UI port
+    networks:
+      - paisa-vasool-bank-network
+    restart: unless-stopped
+    volumes:
+      - paisa-vasool-bank-redis-data:/data
+
+    
 networks:
   chai-pani-network:
     driver: bridge
@@ -305,6 +385,10 @@ networks:
 
 volumes:
   redis-data:
+  chai-pani-redis-data:
+  chinta-mat-karo-redis-data:
+  paisa-vasool-bank-redis-data:
+  babu-rao-ganpatrao-bank-redis-data:
   postgres_chai-pani_data:
   postgres_chinta-mat-karo_data:
   postgres_paisa-vasool-bank_data:
