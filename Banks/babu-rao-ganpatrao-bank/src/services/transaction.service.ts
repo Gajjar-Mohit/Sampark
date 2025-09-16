@@ -34,3 +34,8 @@ export const storeTransaction = async (
     throw error;
   }
 };
+
+export const getAllTransactions = async () => {
+  const transactions = await prisma.transaction.findMany();
+  return transactions;
+};

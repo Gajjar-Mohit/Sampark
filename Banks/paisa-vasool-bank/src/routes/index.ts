@@ -3,6 +3,7 @@ import accountRoute from "./account.route";
 import cardRoute from "./card.route";
 import tpapRouter from "./tpap.route";
 import impsRouter from "./imps.route";
+import transactionRouter from "./transaction.route";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/account", accountRoute);
 router.use("/card", cardRoute);
 router.use("/tpap", tpapRouter);
 router.use("/imps", impsRouter);
+router.use("/transaction", transactionRouter);
 
 export default router;

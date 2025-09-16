@@ -10,13 +10,24 @@ const app = express();
 if (!process.env.KAFKA_BASEURL) {
   throw new Error("KAFKA_BASEURL is not set");
 }
-
 export const kafka = new Kafka({
   clientId: "nth-switch",
   brokers: [process.env.KAFKA_BASEURL],
 });
+// Initialize the service asynchronously
+async function startServices() {
+  try {
+    console.log("Starting IMPS Kafka service...");
+    await listernForNTH();
+    console.log("IMPS Kafka service started successfully");
+  } catch (error) {
+    console.error("Failed to start IMPS Kafka service:", error);
+    process.exit(1);
+  }
+}
 
-listernForNTH();
+// Start services
+startServices();
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
