@@ -1,25 +1,25 @@
+version: '3.8'
+
 services:
+  # Infrastructure Services
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "ERROR"
-    # ports:
-    #   - "2181:2181"
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: ERROR
     networks:
       - kafka-network
     logging:
       driver: "none"
+    restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:6.2.0
     container_name: kafka
     depends_on:
       - zookeeper
-    # ports:
-    #   - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -31,10 +31,9 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
-      # Log level controls
       KAFKA_LOG4J_LOGGERS: "kafka.coordinator.group.GroupMetadataManager=ERROR,state.change.logger=ERROR,kafka.log.LogCleaner=ERROR,kafka.controller=ERROR"
-      KAFKA_LOG4J_ROOT_LOGLEVEL: "ERROR"
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: ERROR
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: ERROR
     networks:
       - kafka-network
     healthcheck:
@@ -44,7 +43,9 @@ services:
       retries: 10
     logging:
       driver: "none"
+    restart: unless-stopped
 
+  # Shared Redis Instance
   redis-stack:
     image: redis/redis-stack:latest
     container_name: redis-stack
@@ -56,10 +57,11 @@ services:
       - "8001:8001"  # RedisInsight web UI port
     networks:
       - kafka-network
-    restart: unless-stopped
     volumes:
       - redis-data:/data
+    restart: unless-stopped
 
+  # NTH Switch Service
   nth-switch:
     build:
       context: ./nth
@@ -71,7 +73,7 @@ services:
       REDIS_URL: redis://redis-stack:6379
       REDIS_HOST: redis-stack
       REDIS_PORT: 6379
-      REDIS_PASSWORD: 
+      REDIS_PASSWORD: ""
       REDIS_DB: 0
     depends_on:
       kafka:
@@ -89,96 +91,98 @@ services:
         bun run seed &&
         bun run src/index.ts
       "
+    restart: unless-stopped
 
+  # Database Services
   babu-rao-ganpatrao-bank-db:
     image: postgres:15-alpine
     container_name: babu-rao-ganpatrao-bank-db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: babu-rao-ganpatrao-bank_db
-      POSTGRES_USER: babu-rao-ganpatrao-bank_user
-      POSTGRES_PASSWORD: babu-rao-ganpatrao-bank_password 
+      POSTGRES_DB: babu_rao_ganpatrao_bank_db
+      POSTGRES_USER: babu_rao_ganpatrao_bank_user
+      POSTGRES_PASSWORD: babu_rao_ganpatrao_bank_password
     volumes:
-      - postgres_babu-rao-ganpatrao-bank_data:/var/lib/postgresql/data
+      - postgres_babu_rao_ganpatrao_bank_data:/var/lib/postgresql/data
     networks:
       - babu-rao-ganpatrao-bank-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U babu-rao-ganpatrao-bank_user -d babu-rao-ganpatrao-bank_db"]
+      test: ["CMD-SHELL", "pg_isready -U babu_rao_ganpatrao_bank_user -d babu_rao_ganpatrao_bank_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-      
+    restart: unless-stopped
+
   chai-pani-db:
     image: postgres:15-alpine
     container_name: chai-pani-db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: chai-pani-db
-      POSTGRES_USER: chai-pani_user
-      POSTGRES_PASSWORD: chai-pani_password
+      POSTGRES_DB: chai_pani_db
+      POSTGRES_USER: chai_pani_user
+      POSTGRES_PASSWORD: chai_pani_password
     volumes:
-      - postgres_chai-pani_data:/var/lib/postgresql/data
+      - postgres_chai_pani_data:/var/lib/postgresql/data
     networks:
       - chai-pani-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chai-pani_user -d chai-pani-db"]
+      test: ["CMD-SHELL", "pg_isready -U chai_pani_user -d chai_pani_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   chinta-mat-karo-db:
     image: postgres:15-alpine
     container_name: chinta-mat-karo-db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: chinta-mat-karo_db
-      POSTGRES_USER: chinta-mat-karo_user
-      POSTGRES_PASSWORD: chinta-mat-karo_password 
+      POSTGRES_DB: chinta_mat_karo_db
+      POSTGRES_USER: chinta_mat_karo_user
+      POSTGRES_PASSWORD: chinta_mat_karo_password
     volumes:
-      - postgres_chinta-mat-karo_data:/var/lib/postgresql/data
+      - postgres_chinta_mat_karo_data:/var/lib/postgresql/data
     networks:
       - chinta-mat-karo-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chinta-mat-karo_user -d chinta-mat-karo_db"]
+      test: ["CMD-SHELL", "pg_isready -U chinta_mat_karo_user -d chinta_mat_karo_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   paisa-vasool-bank-db:
     image: postgres:15-alpine
     container_name: paisa-vasool-bank-db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: paisa-vasool-bank_db
-      POSTGRES_USER: paisa-vasool-bank_user
-      POSTGRES_PASSWORD: paisa-vasool-bank_password 
+      POSTGRES_DB: paisa_vasool_bank_db
+      POSTGRES_USER: paisa_vasool_bank_user
+      POSTGRES_PASSWORD: paisa_vasool_bank_password
     volumes:
-      - postgres_paisa-vasool-bank_data:/var/lib/postgresql/data
+      - postgres_paisa_vasool_bank_data:/var/lib/postgresql/data
     networks:
       - paisa-vasool-bank-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U paisa-vasool-bank_user -d paisa-vasool-bank_db"]
+      test: ["CMD-SHELL", "pg_isready -U paisa_vasool_bank_user -d paisa_vasool_bank_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # Bank Services
   babu-rao-ganpatrao-bank-service:
     build:
       context: ./banks/babu-rao-ganpatrao-bank
       dockerfile: Dockerfile
     container_name: babu-rao-ganpatrao-bank-service
-    restart: unless-stopped
     ports:
-      - "3001:3000" 
+      - "3001:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://babu-rao-ganpatrao-bank_user:babu-rao-ganpatrao-bank_password@babu-rao-ganpatrao-bank-db:5432/babu-rao-ganpatrao-bank_db
+      DATABASE_URL: postgresql://babu_rao_ganpatrao_bank_user:babu_rao_ganpatrao_bank_password@babu-rao-ganpatrao-bank-db:5432/babu_rao_ganpatrao_bank_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
       REDIS_URL: redis://babu-rao-ganpatrao-bank-redis-stack:6379
       REDIS_HOST: babu-rao-ganpatrao-bank-redis-stack
       REDIS_PORT: 6379
-      REDIS_PASSWORD: 
+      REDIS_PASSWORD: ""
       REDIS_DB: 0
     depends_on:
       babu-rao-ganpatrao-bank-db:
@@ -194,28 +198,28 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
-        bun prisma migrate deploy && 
+        bun prisma migrate deploy &&
         bun run seed &&
         bun run src/index.ts
       "
-  # Express App for Project 2
+    restart: unless-stopped
+
   chai-pani-service:
     build:
       context: ./banks/chai-pani-bank
       dockerfile: Dockerfile
     container_name: chai-pani-service
-    restart: unless-stopped
     ports:
-      - "3002:3000"  # Different port to avoid conflicts
+      - "3002:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://chai-pani_user:chai-pani_password@chai-pani-db:5432/chai-pani-db
+      DATABASE_URL: postgresql://chai_pani_user:chai_pani_password@chai-pani-db:5432/chai_pani_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
       REDIS_URL: redis://chai-pani-redis-stack:6379
       REDIS_HOST: chai-pani-redis-stack
       REDIS_PORT: 6379
-      REDIS_PASSWORD: 
+      REDIS_PASSWORD: ""
       REDIS_DB: 0
     depends_on:
       chai-pani-db:
@@ -231,28 +235,28 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
-        bun prisma migrate deploy && 
+        bun prisma migrate deploy &&
         bun run seed &&
         bun run src/index.ts
       "
+    restart: unless-stopped
 
   chinta-mat-karo-service:
     build:
       context: ./banks/chinta-mat-karo-bank
       dockerfile: Dockerfile
     container_name: chinta-mat-karo-service
-    restart: unless-stopped
     ports:
-      - "3003:3000" 
+      - "3003:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://chinta-mat-karo_user:chinta-mat-karo_password@chinta-mat-karo-db:5432/chinta-mat-karo_db
+      DATABASE_URL: postgresql://chinta_mat_karo_user:chinta_mat_karo_password@chinta-mat-karo-db:5432/chinta_mat_karo_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
       REDIS_URL: redis://chinta-mat-karo-redis-stack:6379
       REDIS_HOST: chinta-mat-karo-redis-stack
       REDIS_PORT: 6379
-      REDIS_PASSWORD: 
+      REDIS_PASSWORD: ""
       REDIS_DB: 0
     depends_on:
       chinta-mat-karo-db:
@@ -268,28 +272,28 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
-        bun prisma migrate deploy && 
+        bun prisma migrate deploy &&
         bun run seed &&
         bun run src/index.ts
       "
+    restart: unless-stopped
 
   paisa-vasool-bank-service:
     build:
       context: ./banks/paisa-vasool-bank
       dockerfile: Dockerfile
     container_name: paisa-vasool-bank-service
-    restart: unless-stopped
     ports:
-      - "3004:3000" 
+      - "3004:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://paisa-vasool-bank_user:paisa-vasool-bank_password@paisa-vasool-bank-db:5432/paisa-vasool-bank_db
+      DATABASE_URL: postgresql://paisa_vasool_bank_user:paisa_vasool_bank_password@paisa-vasool-bank-db:5432/paisa_vasool_bank_db
       PORT: 3000
       KAFKA_BASEURL: kafka:9092
       REDIS_URL: redis://paisa-vasool-bank-redis-stack:6379
       REDIS_HOST: paisa-vasool-bank-redis-stack
       REDIS_PORT: 6379
-      REDIS_PASSWORD: 
+      REDIS_PASSWORD: ""
       REDIS_DB: 0
     depends_on:
       paisa-vasool-bank-db:
@@ -305,11 +309,13 @@ services:
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
-        bun prisma migrate deploy && 
+        bun prisma migrate deploy &&
         bun run seed &&
         bun run src/index.ts
       "
+    restart: unless-stopped
 
+  # Redis Services for Banks
   babu-rao-ganpatrao-bank-redis-stack:
     image: redis/redis-stack:latest
     container_name: babu-rao-ganpatrao-bank-redis-stack
@@ -321,9 +327,9 @@ services:
       - "8002:8001"  # RedisInsight web UI port
     networks:
       - babu-rao-ganpatrao-bank-network
-    restart: unless-stopped
     volumes:
-      - babu-rao-ganpatrao-bank-redis-data:/data
+      - babu_rao_ganpatrao_bank_redis_data:/data
+    restart: unless-stopped
 
   chai-pani-redis-stack:
     image: redis/redis-stack:latest
@@ -336,9 +342,9 @@ services:
       - "8003:8001"  # RedisInsight web UI port
     networks:
       - chai-pani-network
-    restart: unless-stopped
     volumes:
-      - chai-pani-redis-data:/data
+      - chai_pani_redis_data:/data
+    restart: unless-stopped
 
   chinta-mat-karo-redis-stack:
     image: redis/redis-stack:latest
@@ -351,9 +357,9 @@ services:
       - "8004:8001"  # RedisInsight web UI port
     networks:
       - chinta-mat-karo-network
-    restart: unless-stopped
     volumes:
-      - chinta-mat-karo-redis-data:/data
+      - chinta_mat_karo_redis_data:/data
+    restart: unless-stopped
 
   paisa-vasool-bank-redis-stack:
     image: redis/redis-stack:latest
@@ -366,30 +372,29 @@ services:
       - "8005:8001"  # RedisInsight web UI port
     networks:
       - paisa-vasool-bank-network
-    restart: unless-stopped
     volumes:
-      - paisa-vasool-bank-redis-data:/data
+      - paisa_vasool_bank_redis_data:/data
+    restart: unless-stopped
 
-    
 networks:
+  kafka-network:
+    driver: bridge
+  babu-rao-ganpatrao-bank-network:
+    driver: bridge
   chai-pani-network:
     driver: bridge
   chinta-mat-karo-network:
     driver: bridge
   paisa-vasool-bank-network:
     driver: bridge
-  babu-rao-ganpatrao-bank-network:
-    driver: bridge
-  kafka-network:
-    driver: bridge
 
 volumes:
   redis-data:
-  chai-pani-redis-data:
-  chinta-mat-karo-redis-data:
-  paisa-vasool-bank-redis-data:
-  babu-rao-ganpatrao-bank-redis-data:
-  postgres_chai-pani_data:
-  postgres_chinta-mat-karo_data:
-  postgres_paisa-vasool-bank_data:
-  postgres_babu-rao-ganpatrao-bank_data:
+  babu_rao_ganpatrao_bank_redis_data:
+  chai_pani_redis_data:
+  chinta_mat_karo_redis_data:
+  paisa_vasool_bank_redis_data:
+  postgres_babu_rao_ganpatrao_bank_data:
+  postgres_chai_pani_data:
+  postgres_chinta_mat_karo_data:
+  postgres_paisa_vasool_bank_data:

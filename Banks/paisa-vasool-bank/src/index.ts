@@ -35,18 +35,6 @@ async function createRedisClient() {
     database: config.redis.db,
   });
   await client.connect();
-  client.on("error", (err) => {
-    console.error("Redis Client Error:", err);
-  });
-
-  client.on("connect", () => {
-    console.log("Redis client connected");
-  });
-
-  client.on("disconnect", () => {
-    console.log("Redis client disconnected");
-  });
-
   return client;
 }
 
