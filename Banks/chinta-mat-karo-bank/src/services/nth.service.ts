@@ -11,45 +11,43 @@ export async function listernForNTH() {
     topics: ["NTH-to-456123"],
   });
 
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
-      const key = message.key?.toString() ?? "";
-      const value = message.value?.toString() ?? "";
-      if (!key || !value) {
-        console.warn("Invalid message received");
-        await sendNotFoundResponseToNTH();
-        return;
-      }
-      console.log(key, value);
+ await consumer.run({
+   eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
+     const key = message.key?.toString() ?? "";
+     const value = message.value?.toString() ?? "";
+     if (!key || !value) {
+       console.warn("Invalid message received");
+       await sendNotFoundResponseToNTH();
+       return;
+     }
+     console.log(key, value);
 
-      if (key.includes("imps-transfer-verify-details")) {
-        console.log("Verify details received");
-        const details = JSON.parse(value);
-        const account = await getAccountByContactNo(
-          details.accountNo,
-          details.ifscCode,
-          details.requestedBy,
-          details.txnId
-        );
-        if (!account) {
-          await sendNotFoundResponseToNTH();
-          return;
-        }
-        await sendResponseToNTH(JSON.stringify(account));
-        return;
-      }
-      if (message.key?.toString().includes("imps-transfer-debit-remitter")) {
-        await debitRequest(message.value?.toString() || "");
-        return;
-      }
-      if (
-        message.key?.toString().includes("imps-transfer-credit-beneficiary")
-      ) {
-        await creditRequest(message.value?.toString() || "");
-        return;
-      }
-    },
-  });
+     if (key === "imps-transfer-verify-details") {
+       console.log("Verify details received");
+       const details = JSON.parse(value);
+       const account = await getAccountByContactNo(
+         details.accountNo,
+         details.ifscCode,
+         details.requestedBy,
+         details.txnId
+       );
+       if (!account) {
+         await sendNotFoundResponseToNTH();
+         return;
+       }
+       await sendResponseToNTH(JSON.stringify(account));
+       return;
+     }
+     if (message.key?.toString() === "imps-transfer-debit-remitter") {
+       await debitRequest(message.value?.toString() || "");
+       return;
+     }
+     if (message.key?.toString() === "imps-transfer-credit-beneficiary") {
+       await creditRequest(message.value?.toString() || "");
+       return;
+     }
+   },
+ });
 }
 
 async function debitRequest(details: any) {
@@ -126,11 +124,11 @@ async function creditRequest(details: any) {
 
 async function sendResponseToNTH(accountDetails: string) {
   const producer = kafka.producer();
-  console.log("Connecting 789456-to-NTH");
+  console.log("Connecting 456123-to-NTH");
   await producer.connect();
   console.log("Sending response to NTH");
   await producer.send({
-    topic: "789456-to-NTH",
+    topic: "456123-to-NTH",
     messages: [
       {
         key: "imps-transfer-verified-details",

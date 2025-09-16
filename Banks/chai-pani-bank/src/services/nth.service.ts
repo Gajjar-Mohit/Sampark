@@ -22,7 +22,7 @@ export async function listernForNTH() {
       }
       console.log(key, value);
 
-      if (key.includes("imps-transfer-verify-details")) {
+      if (key === "imps-transfer-verify-details") {
         console.log("Verify details received");
         const details = JSON.parse(value);
         const account = await getAccountByContactNo(
@@ -38,13 +38,11 @@ export async function listernForNTH() {
         await sendResponseToNTH(JSON.stringify(account));
         return;
       }
-      if (message.key?.toString().includes("imps-transfer-debit-remitter")) {
+      if (message.key?.toString() === "imps-transfer-debit-remitter") {
         await debitRequest(message.value?.toString() || "");
         return;
       }
-      if (
-        message.key?.toString().includes("imps-transfer-credit-beneficiary")
-      ) {
+      if (message.key?.toString() === "imps-transfer-credit-beneficiary") {
         await creditRequest(message.value?.toString() || "");
         return;
       }

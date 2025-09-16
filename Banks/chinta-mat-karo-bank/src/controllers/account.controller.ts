@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import { CheckBalanceRequest, CreateAccountRequest } from "../types/account";
-import { createAccount, getAccountByAccountNo } from "../services/account.service";
+import {
+  createAccount,
+  getAccountByAccountNo,
+  getAccounts,
+} from "../services/account.service";
 export const createAccountController = async (req: Request, res: Response) => {
   const parsedBody = CreateAccountRequest.safeParse(req.body);
   if (!parsedBody.success) {
@@ -40,6 +44,24 @@ export const checkBalanceController = async (req: Request, res: Response) => {
   return res.status(200).json({
     status: "Success",
     message: "Account balance fetched successfully",
+    data: response,
+  });
+};
+
+export const getAllAccountsController = async (req: Request, res: Response) => {
+  const response = await getAccounts();
+
+  if (!response) {
+    return res.status(404).json({
+      status: "Error",
+      message: "No accounts found",
+      data: [],
+    });
+  }
+
+  return res.status(200).json({
+    status: "Success",
+    message: "Accounts fetched successfully",
     data: response,
   });
 };
