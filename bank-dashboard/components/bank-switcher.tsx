@@ -1,20 +1,8 @@
-"use client"
 import { useBank } from "@/contexts/bank-context";
 import { BANKS } from "@/lib/bank-config";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
-import { useState, createContext, useContext, ReactNode } from "react";
+import { useState, createContext, useContext } from "react";
 
-// Context
-const BankContext = createContext({});
-
-function BankProvider({ children }: { children: ReactNode }) {
-  const [currentBank, setCurrentBank] = useState(BANKS[0]);
-  return (
-    <BankContext.Provider value={{ currentBank, setCurrentBank }}>
-      {children}
-    </BankContext.Provider>
-  );
-}
 
 
 // Components
@@ -45,7 +33,7 @@ export function BankSwitcher() {
             />
           </div>
           <div className="max-h-60 overflow-auto">
-            {BANKS.map((bank) => (
+            {BANKS.map((bank: any) => (
               <button
                 key={bank.id}
                 onClick={() => {

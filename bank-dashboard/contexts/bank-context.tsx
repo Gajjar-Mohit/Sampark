@@ -13,7 +13,18 @@ const BankContext = createContext<BankContextType | undefined>(undefined)
 export function BankProvider({ children }: { children: ReactNode }) {
   const [currentBank, setCurrentBank] = useState<BankConfig>(DEFAULT_BANK)
 
-  return <BankContext.Provider value={{ currentBank, setCurrentBank }}>{children}</BankContext.Provider>
+  const handleSetCurrentBank = (bank: BankConfig) => {
+    console.log("[v0] BankProvider - Changing bank from:", currentBank.name, "to:", bank.name)
+    setCurrentBank(bank)
+  }
+
+  console.log("[v0] BankProvider - Current bank in context:", currentBank)
+
+  return (
+    <BankContext.Provider value={{ currentBank, setCurrentBank: handleSetCurrentBank }}>
+      {children}
+    </BankContext.Provider>
+  )
 }
 
 export function useBank() {

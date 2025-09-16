@@ -1,44 +1,18 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Search,
-  Filter,
-  Download,
-  ArrowUpDown,
-  Eye,
-  Edit,
-  MoreHorizontal,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { AdvancedFilters } from "@/components/advanced-filters";
-import { AccountDetailsModal } from "@/components/account-details-modal";
-import { useAccounts } from "@/hooks/use-accounts";
-import type { AccountFilters, Account } from "@/lib/types";
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Search, Filter, Download, ArrowUpDown, Eye, Edit, MoreHorizontal } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AdvancedFilters } from "@/components/advanced-filters"
+import { AccountDetailsModal } from "@/components/account-details-modal"
+import { useAccounts } from "@/hooks/use-accounts"
+import type { AccountFilters, Account } from "@/lib/types"
 
 export function AccountsTable() {
   const [filters, setFilters] = useState<AccountFilters>({
@@ -48,58 +22,58 @@ export function AccountsTable() {
     maxBalance: "",
     sortBy: "accountHolderName",
     sortOrder: "asc",
-  });
+  })
 
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
+  const [showAccountDetails, setShowAccountDetails] = useState(false)
 
-  const { accounts, total, isLoading, error } = useAccounts(filters);
+  const { accounts, total, isLoading, error } = useAccounts(filters)
 
   const updateFilter = (key: keyof AccountFilters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }
 
   const toggleSort = (column: string) => {
     if (filters.sortBy === column) {
-      updateFilter("sortOrder", filters.sortOrder === "asc" ? "desc" : "asc");
+      updateFilter("sortOrder", filters.sortOrder === "asc" ? "desc" : "asc")
     } else {
-      updateFilter("sortBy", column);
-      updateFilter("sortOrder", "asc");
+      updateFilter("sortBy", column)
+      updateFilter("sortOrder", "asc")
     }
-  };
+  }
 
   const handleViewAccount = (account: Account) => {
-    setSelectedAccount(account);
-    setShowAccountDetails(true);
-  };
+    setSelectedAccount(account)
+    setShowAccountDetails(true)
+  }
 
   const handleEditAccount = (account: Account) => {
-    setSelectedAccount(account);
-    setShowAccountDetails(true);
-  };
+    setSelectedAccount(account)
+    setShowAccountDetails(true)
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       minimumFractionDigits: 0,
-    }).format(amount);
-  };
+    }).format(amount)
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    });
-  };
+    })
+  }
 
   const getBalanceColor = (balance: number) => {
-    if (balance < 1000) return "text-destructive";
-    if (balance < 10000) return "text-orange-600";
-    return "text-primary";
-  };
+    if (balance < 1000) return "text-destructive"
+    if (balance < 10000) return "text-orange-600"
+    return "text-primary"
+  }
 
   const branches = [
     "all",
@@ -110,18 +84,16 @@ export function AccountsTable() {
     "City Center Branch",
     "Industrial Area Branch",
     "Residential Colony Branch",
-  ];
+  ]
 
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-destructive">
-            Error loading accounts. Please try again.
-          </div>
+          <div className="text-center text-destructive">Error loading accounts. Please try again.</div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -136,9 +108,7 @@ export function AccountsTable() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-xl font-semibold">
-              Account Management
-            </CardTitle>
+            <CardTitle className="text-xl font-semibold">Account Management</CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
@@ -160,10 +130,7 @@ export function AccountsTable() {
               />
             </div>
 
-            <Select
-              value={filters.branch}
-              onValueChange={(value) => updateFilter("branch", value)}
-            >
+            <Select value={filters.branch} onValueChange={(value) => updateFilter("branch", value)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
@@ -193,11 +160,7 @@ export function AccountsTable() {
               />
             </div>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            >
+            <Button variant="outline" size="icon" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
               <Filter className="h-4 w-4" />
             </Button>
           </div>
@@ -267,28 +230,16 @@ export function AccountsTable() {
                     <TableRow key={account.id} className="hover:bg-muted/50">
                       <TableCell>
                         <div>
-                          <div className="font-medium">
-                            {account.accountHolderName}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            PAN: {account.panCardNo}
-                          </div>
+                          <div className="font-medium">{account.accountHolderName}</div>
+                          <div className="text-sm text-muted-foreground">PAN: {account.panCardNo}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-mono text-sm">
-                          {account.accountNo}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          MMID: {account.mmid}
-                        </div>
+                        <div className="font-mono text-sm">{account.accountNo}</div>
+                        <div className="text-xs text-muted-foreground">MMID: {account.mmid}</div>
                       </TableCell>
                       <TableCell>
-                        <div
-                          className={`font-semibold ${getBalanceColor(
-                            account.balance
-                          )}`}
-                        >
+                        <div className={`font-semibold ${getBalanceColor(account.balance)}`}>
                           {formatCurrency(account.balance)}
                         </div>
                         {account.balance < 1000 && (
@@ -299,41 +250,27 @@ export function AccountsTable() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">{account.branchName}</div>
-                        <div className="text-xs text-muted-foreground font-mono">
-                          {account.ifscCode}
-                        </div>
+                        <div className="text-xs text-muted-foreground font-mono">{account.ifscCode}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm font-mono">
-                          {account.accountHolderContactNo}
-                        </div>
+                        <div className="text-sm font-mono">{account.accountHolderContactNo}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
-                          {formatDate(account.createdAt)}
-                        </div>
+                        <div className="text-sm">{formatDate(account.createdAt)}</div>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleViewAccount(account)}
-                            >
+                            <DropdownMenuItem onClick={() => handleViewAccount(account)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEditAccount(account)}
-                            >
+                            <DropdownMenuItem onClick={() => handleEditAccount(account)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit Account
                             </DropdownMenuItem>
@@ -348,9 +285,7 @@ export function AccountsTable() {
           )}
 
           {accounts.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
-              No accounts found matching your criteria.
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No accounts found matching your criteria.</div>
           )}
         </CardContent>
       </Card>
@@ -359,10 +294,10 @@ export function AccountsTable() {
         account={selectedAccount}
         isOpen={showAccountDetails}
         onClose={() => {
-          setShowAccountDetails(false);
-          setSelectedAccount(null);
+          setShowAccountDetails(false)
+          setSelectedAccount(null)
         }}
       />
     </div>
-  );
+  )
 }
