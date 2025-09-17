@@ -21,6 +21,7 @@ export enum MessageType {
   VERIFIED_DETAILS = "imps-transfer-verified-details",
   ACCOUNT_DETAILS = "account-details",
   IMPS_TRANSFER = "imps-transfer",
+  IMPS_TRANSFER_COMPLETE = "imps-transfer-complete",
 }
 
 export interface RemitterDetails {

@@ -43,6 +43,25 @@ export const saveLog = async (log: Log) => {
   }
 };
 
+export const updateStatusToComplete = async (transactionId: string) => {
+  try {
+    const res = await redisClient.get(transactionId);
+    if (res) {
+      const parsedLog = JSON.parse(res);
+      if (
+        parsedLog.data.status === "PENDING" ||
+        parsedLog.data.status === "FAILED"
+      ) {
+        parsedLog.data.status = "COMPLETED";
+        await redisClient.set(transactionId, parsedLog);
+      }
+    }
+  } catch (error) {
+    console.error("Error retrieving log:", error);
+    throw error;
+  }
+};
+
 export const getLogByTransactionId = async (transactionId: string) => {
   console.log(`Retrieving log for transaction: ${transactionId}`);
   try {

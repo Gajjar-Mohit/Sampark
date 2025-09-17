@@ -75,12 +75,44 @@ class IMPSKafkaService {
       case MessageType.CREDIT_BENEFICIARY:
         await this.handleCreditRequest(value);
         break;
+      case MessageType.IMPS_TRANSFER_COMPLETE:
+        await this.handleIMPSTranferComplete(value);
+        break;
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
     }
   }
 
+  private async handleIMPSTranferComplete(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling IMPS transfer complete", details);
+      await saveLog({
+        transactionId: details.txnId,
+        data: {
+          mode: "IMPS",
+          amount: details.amount,
+          status: "COMPLETE",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo: details.remitterDetails.accountNo,
+            ifscCode: details.remitterDetails.ifscCode,
+            contactNo: details.remitterDetails.contactNo,
+            mmid: details.remitterDetails.mmid,
+          },
+          beneficiaryAccount: {
+            accountNo: details.beneficiaryDetails.accountNo,
+            ifscCode: details.beneficiaryDetails.ifscCode,
+            contactNo: details.beneficiaryDetails.contactNo,
+            mmid: details.beneficiaryDetails.mmid,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error handling IMPS transfer complete:", error);
+    }
+  }
   private async handleVerifyDetails(value: string): Promise<void> {
     try {
       const details: VerifyDetailsRequest = JSON.parse(value);
@@ -215,27 +247,29 @@ class IMPSKafkaService {
       if (!this.isConnected) {
         await this.initialize();
       }
-      await saveLog({
-        transactionId: details.txnId,
-        data: {
-          mode: "IMPS",
-          amount: details.amount,
-          status: "PENDING",
-          reasonOfFailure: "",
-          remitterAccount: {
-            accountNo: details.remitterDetails.accountNo,
-            ifscCode: details.remitterDetails.ifscCode,
-            contactNo: details.remitterDetails.contactNo,
-            mmid: details.remitterDetails.mmid,
+      if (details.remitterDetails && details.beneficiaryDetails) {
+        await saveLog({
+          transactionId: details.txnId,
+          data: {
+            mode: "IMPS",
+            amount: details.amount,
+            status: "PENDING",
+            reasonOfFailure: "",
+            remitterAccount: {
+              accountNo: details.remitterDetails.accountNo,
+              ifscCode: details.remitterDetails.ifscCode,
+              contactNo: details.remitterDetails.contactNo,
+              mmid: details.remitterDetails.mmid,
+            },
+            beneficiaryAccount: {
+              accountNo: details.beneficiaryDetails.accountNo,
+              ifscCode: details.beneficiaryDetails.ifscCode,
+              contactNo: details.beneficiaryDetails.contactNo,
+              mmid: details.beneficiaryDetails.mmid,
+            },
           },
-          beneficiaryAccount: {
-            accountNo: details.beneficiaryDetails.accountNo,
-            ifscCode: details.beneficiaryDetails.ifscCode,
-            contactNo: details.beneficiaryDetails.contactNo,
-            mmid: details.beneficiaryDetails.mmid,
-          },
-        },
-      });
+        });
+      }
       await this.sendResponse(
         MessageType.IMPS_TRANSFER,
         JSON.stringify(details)

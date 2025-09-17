@@ -1,4 +1,5 @@
 import { redisClient } from "../..";
+import { forwardToBank } from "../../egress/forward-to-banks";
 import type { BeneficiaryDetails, RemitterDetails } from "../../types/imps";
 import { IMPS_FLOW } from "../imps-flow";
 import {
@@ -6,6 +7,7 @@ import {
   debitFromRemitter,
   verifyDetails,
 } from "../processor/imps.processor";
+import { registeredBanks } from "../registered-banks";
 
 // Save remitter data - creates new transaction state or updates existing one
 export const saveRemitter = async (
@@ -90,7 +92,6 @@ export const saveBeneficiary = async (
   }
 };
 
-// Get complete transaction state
 export const getTXState = async (transactionId: string) => {
   console.log(`Retrieving transaction state for: ${transactionId}`);
 
@@ -199,7 +200,6 @@ export async function processIMPSTransfer(
           const { accountNo, contactNo, mmid, ifscCode } =
             data.remitterDetails as RemitterDetails;
           const { amount } = data;
-
           remitterBank = {
             accountNo,
             ifscCode,
@@ -254,9 +254,25 @@ export async function processIMPSTransfer(
           return;
         } else if (key.includes("imps-transfer-credit-benificiary-success")) {
           console.log("Beneficiary Credited");
-          const res = JSON.parse(value);
-          console.log("Transaction is complete: ", res);
 
+          const state = await getTXState(data.txnId);
+          const res = JSON.parse(value);
+
+          const initiatedStep = state.processingHistory.find(
+            (step: any) => step.step === "TRANSACTION_INITIATED"
+          );
+
+          console.log("Transaction is complete: ", res);
+          console.log("Remitter bank route: " + initiatedStep.processor);
+          const remitterBank = registeredBanks.find(
+            (bank) => bank.bankToNTH === initiatedStep.processor
+          );
+
+          const key1 = "imps-transfer-complete";
+          console.log("Remitter bank: " + remitterBank!.name);
+          // if
+
+          await forwardToBank(remitterBank!.nthToBank, key1, value);
           return;
         }
         break;

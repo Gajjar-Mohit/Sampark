@@ -1,40 +1,38 @@
-[
-  {
-    "txnId": "TXN012509170414925",
-    "amount": "10",
-    "remitterDetails": {
-      "accountNo": "764814010932",
-      "ifscCode": "BRG14287357",
-      "contactNo": "9123456789",
-      "mmid": ""
+{
+  "transactionId": "TXN042509171207088",
+  "processingHistory": [
+    {
+      "step": "TRANSACTION_INITIATED",
+      "timestamp": "2025-09-17T12:07:54.874Z",
+      "processor": "321987-to-NTH"
     },
-    "benificiaryBank": {
-      "accountNo": "263055921905",
-      "ifscCode": "PVB49660041",
-      "contactNo": "9123456789",
-      "mmid": ""
+    {
+      "step": "VALIDATION_OF_BENEFICIARY_COMPLETE",
+      "timestamp": "2025-09-17T12:07:54.983Z",
+      "processor": "654321-to-NTH"
+    },
+    {
+      "step": "DEBIT_REMITTER_COMPLETE",
+      "timestamp": "2025-09-17T12:07:55.074Z",
+      "processor": "321987-to-NTH"
+    },
+    {
+      "step": "CREDIT_BENEFICIARY_COMPLETE",
+      "timestamp": "2025-09-17T12:07:55.099Z",
+      "processor": "654321-to-NTH"
     }
+  ],
+  "remitterBank": {
+    "accountNo": "995951284271",
+    "ifscCode": "PVB82276477",
+    "contactNo": "8234567890",
+    "mmid": ""
   },
-  {
-    "transactionId": "TXN012509170513486",
-    "processingHistory": [
-      {
-        "step": "TRANSACTION_INITIATED",
-        "timestamp": "2025-09-17T05:13:57.210Z",
-        "processor": "654321-to-NTH"
-      },
-      {
-        "step": "VALIDATION_OF_BENEFICIARY_COMPLETE",
-        "timestamp": "2025-09-17T05:13:57.290Z",
-        "processor": "321987-to-NTH"
-      }
-    ],
-    "remitterBank": {
-      "accountNo": "764814010932",
-      "ifscCode": "BRG14287357",
-      "contactNo": "9123456789",
-      "mmid": ""
-    },
-    "amount": "10"
-  }
-]
+  "beneficiaryBank": {
+    "accountNo": "143699764647",
+    "ifscCode": "BRG89124839",
+    "contactNo": "9123456789",
+    "mmid": "0003359"
+  },
+  "amount": "10"
+}
