@@ -1,52 +1,18 @@
 import { kafka } from "..";
+import {
+  MessageType,
+  type VerifyDetailsRequest,
+  type TransferDetails,
+} from "../types/imps";
 import { getAccountByContactNo } from "./account.service";
 import { creditBankAccount, debitBankAccount } from "./imps.service";
+import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
 
-// Constants
-const IIN = "321987";
+const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
 const RECEIVE_TOPIC = `NTH-to-${IIN}`;
 const SEND_TOPIC = `${IIN}-to-NTH`;
-
-// Message types enum for better type safety
-enum MessageType {
-  VERIFY_DETAILS = "imps-transfer-verify-details",
-  DEBIT_REMITTER = "imps-transfer-debit-remitter",
-  CREDIT_BENEFICIARY = "imps-transfer-credit-beneficiary",
-  DEBIT_SUCCESS = "imps-transfer-debit-remitter-success",
-  CREDIT_SUCCESS = "imps-transfer-credit-benificiary-success",
-  VERIFIED_DETAILS = "imps-transfer-verified-details",
-  ACCOUNT_DETAILS = "account-details",
-  IMPS_TRANSFER = "imps-transfer",
-}
-
-// Interfaces for better type safety
-interface RemitterDetails {
-  accountNo: string;
-  ifscCode: string;
-  contactNo: string;
-  amount: string;
-}
-
-interface BeneficiaryDetails {
-  accountNo: string;
-  ifscCode: string;
-  contactNo: string;
-}
-
-interface TransferDetails {
-  remitterDetails: RemitterDetails;
-  beneficiaryDetails: BeneficiaryDetails;
-  txnId: string;
-}
-
-interface VerifyDetailsRequest {
-  accountNo: string;
-  ifscCode: string;
-  requestedBy: string;
-  txnId: string;
-}
 
 class IMPSKafkaService {
   private consumer = kafka.consumer({ groupId: GROUP_ID });
@@ -142,14 +108,12 @@ class IMPSKafkaService {
   private async handleDebitRequest(value: string): Promise<void> {
     try {
       const data: TransferDetails = JSON.parse(value);
-      const { remitterDetails, beneficiaryDetails, txnId } = data;
-      const amount = Number.parseFloat(remitterDetails.amount);
+      console.log(data);
+      const { remitterDetails, beneficiaryDetails, txnId, amount } = data;
+      const parsedAmount = Number.parseFloat(amount);
 
-      if (isNaN(amount) || amount <= 0) {
-        console.error(
-          "Invalid amount for debit request:",
-          remitterDetails.amount
-        );
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        console.error("Invalid amount for debit request:", amount);
         return;
       }
 
@@ -158,11 +122,11 @@ class IMPSKafkaService {
           remitterDetails.accountNo,
           remitterDetails.ifscCode,
           remitterDetails.contactNo,
-          amount
+          parsedAmount
         ),
         storeTransaction(
           txnId,
-          amount,
+          parsedAmount,
           "DEBIT",
           remitterDetails.accountNo,
           `IMPS/${beneficiaryDetails.accountNo}`
@@ -185,14 +149,12 @@ class IMPSKafkaService {
   private async handleCreditRequest(value: string): Promise<void> {
     try {
       const data: TransferDetails = JSON.parse(value);
-      const { remitterDetails, beneficiaryDetails, txnId } = data;
-      const amount = Number.parseFloat(remitterDetails.amount);
 
-      if (isNaN(amount) || amount <= 0) {
-        console.error(
-          "Invalid amount for credit request:",
-          remitterDetails.amount
-        );
+      const { remitterDetails, beneficiaryDetails, txnId, amount } = data;
+      const parsedAmount = Number.parseFloat(amount);
+
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        console.error("Invalid amount for credit request:", amount);
         return;
       }
 
@@ -201,11 +163,11 @@ class IMPSKafkaService {
           beneficiaryDetails.accountNo,
           beneficiaryDetails.ifscCode,
           beneficiaryDetails.contactNo,
-          amount
+          parsedAmount
         ),
         storeTransaction(
           txnId,
-          amount,
+          parsedAmount,
           "CREDIT",
           beneficiaryDetails.accountNo,
           `IMPS/${remitterDetails.accountNo}`
@@ -252,7 +214,27 @@ class IMPSKafkaService {
       if (!this.isConnected) {
         await this.initialize();
       }
-
+      await saveLog({
+        transactionId: details.txnId,
+        data: {
+          mode: "IMPS",
+          amount: details.amount,
+          status: "PENDING",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo: details.remitterDetails.accountNo,
+            ifscCode: details.remitterDetails.ifscCode,
+            contactNo: details.remitterDetails.contactNo,
+            mmid: details.remitterDetails.mmid,
+          },
+          beneficiaryAccount: {
+            accountNo: details.beneficiaryDetails.accountNo,
+            ifscCode: details.beneficiaryDetails.ifscCode,
+            contactNo: details.beneficiaryDetails.contactNo,
+            mmid: details.beneficiaryDetails.mmid,
+          },
+        },
+      });
       await this.sendResponse(
         MessageType.IMPS_TRANSFER,
         JSON.stringify(details)
@@ -289,7 +271,7 @@ function getIMPSKafkaService(): IMPSKafkaService {
 }
 
 export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
-export const initiateIMPSTransfer = (details: TransferDetails) => 
+export const initiateIMPSTransfer = (details: TransferDetails) =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
 
 export default getIMPSKafkaService;

@@ -8,7 +8,7 @@ export async function createConnections() {
     console.log("Admin connecting...");
     await admin.connect();
     console.log("Admin Connection Success...");
-    // const topics = await admin.listTopics();
+    const topics = await admin.listTopics();
     // console.log(topics);
     //  await admin.deleteTopics({
     //    topics,
@@ -17,18 +17,24 @@ export async function createConnections() {
       const iin1 = bank.iin + "-to-NTH";
       const iin2 = "NTH-to-" + bank.iin;
       console.log("Creating channel for bank ", bank.name, iin1, iin2);
-      // await admin.createTopics({ topics: [{ topic: bank.iin }] });
-
-      await admin.createTopics({
-        topics: [
-          {
-            topic: iin1,
-          },
-          {
-            topic: iin2,
-          },
-        ],
-      });
+      if (!topics.includes(iin1)) {
+        await admin.createTopics({
+          topics: [
+            {
+              topic: iin1,
+            },
+          ],
+        });
+      }
+      if (!topics.includes(iin2)) {
+        await admin.createTopics({
+          topics: [
+            {
+              topic: iin2,
+            },
+          ],
+        });
+      }
     });
 
     console.log("Channels Created Successfully");

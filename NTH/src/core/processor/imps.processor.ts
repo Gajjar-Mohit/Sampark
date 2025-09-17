@@ -5,10 +5,10 @@ import { registeredBanks } from "../registered-banks";
 export async function verifyDetails(topic: string, key: string, value: string) {
   const data = JSON.parse(value);
   const amount = data.amount;
-  const beneficiaryAccountNo = data.beneficiaryAccountNo;
-  const beneficiaryMobileNo = data.beneficiaryMobileNo;
-  const beneficiaryMMID = data.beneficiaryMMID;
-  const benificiaryIFSCode = data.benificiaryIFSCode;
+  const beneficiaryAccountNo = data.beneficiaryDetails.accountNo;
+  const beneficiaryMobileNo = data.beneficiaryDetails.contactNo;
+  const beneficiaryMMID = data.beneficiaryDetails.mmid;
+  const benificiaryIFSCode = data.beneficiaryDetails.ifscCode;
   const txnId = data.txnId;
   if (!beneficiaryAccountNo && !beneficiaryMMID) {
     const key = "imps-transfer-error";
@@ -34,13 +34,13 @@ export async function verifyDetails(topic: string, key: string, value: string) {
   if (beneficiaryAccountNo && benificiaryIFSCode) {
     console.log("Verifying details using Account no and IFSC code");
     const key = "imps-transfer-verify-details";
-    const benificiaryBank = registeredBanks.find(
+    const beneficiaryDetails = registeredBanks.find(
       (bank) => bank.ifscCodePrefix === benificiaryIFSCode.substring(0, 3)
     );
 
-    console.log("Benificiary bank: " + benificiaryBank?.name);
+    console.log("Benificiary bank: " + beneficiaryDetails?.name);
 
-    if (!benificiaryBank) {
+    if (!beneficiaryDetails) {
       const key = "imps-transfer-error";
       const value = "Benificiary bank not found";
       forwardToBank(topic, key, value);
@@ -50,20 +50,20 @@ export async function verifyDetails(topic: string, key: string, value: string) {
     const value = JSON.stringify({
       ifscCode: benificiaryIFSCode,
       accountNo: beneficiaryAccountNo,
-      replyTo: benificiaryBank.bankToNTH,
+      replyTo: beneficiaryDetails.bankToNTH,
       txnId: txnId,
     });
-    await forwardToBank(benificiaryBank.nthToBank, key, value);
-    return benificiaryBank;
+    await forwardToBank(beneficiaryDetails.nthToBank, key, value);
+    return beneficiaryDetails;
   } else if (beneficiaryMMID) {
     console.log("Verifying details using MMID");
     const key = "imps-transfer-verify-details";
 
-    const benificiaryBank = registeredBanks.find(
+    const beneficiaryDetails = registeredBanks.find(
       (bank) => bank.mmidPrefix === beneficiaryMMID.substring(0, 4)
     );
 
-    if (!benificiaryBank) {
+    if (!beneficiaryDetails) {
       const key = "imps-transfer-error";
       const value = "Benificiary bank not found";
       forwardToBank(topic, key, value);
@@ -73,11 +73,11 @@ export async function verifyDetails(topic: string, key: string, value: string) {
     const value = JSON.stringify({
       ifscCode: benificiaryIFSCode,
       accountNo: beneficiaryMMID,
-      replyTo: benificiaryBank.bankToNTH,
+      replyTo: beneficiaryDetails.bankToNTH,
     });
 
-    await forwardToBank(benificiaryBank.nthToBank, key, value);
-    return benificiaryBank;
+    await forwardToBank(beneficiaryDetails.nthToBank, key, value);
+    return beneficiaryDetails;
   } else {
     const key = "imps-transfer-error";
     const value = "Missing beneficiary details";
@@ -89,7 +89,8 @@ export async function debitFromRemitter(
   topic: string,
   remitterDetails: any,
   beneficiaryDetails: any,
-  txnId: string
+  txnId: string,
+  amount: string
 ) {
   console.log("Debiting from remitter");
   const remitterBank = registeredBanks.find(
@@ -114,6 +115,7 @@ export async function debitFromRemitter(
           remitterDetails: remitterDetails,
           beneficiaryDetails: beneficiaryDetails,
           txnId: txnId,
+          amount: amount,
         }),
       },
     ],
@@ -124,7 +126,8 @@ export async function creditToBeneficiary(
   topic: string,
   remitterDetails: any,
   beneficiaryDetails: any,
-  txnId: string
+  txnId: string,
+  amount: string
 ) {
   const beneficiaryBank = registeredBanks.find(
     (bank) =>
@@ -149,6 +152,7 @@ export async function creditToBeneficiary(
           remitterDetails: remitterDetails,
           beneficiaryDetails: beneficiaryDetails,
           txnId: txnId,
+          amount: amount,
         }),
       },
     ],

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { IMPS_TranferRequest } from "../types/imps";
+import { IMPS_TranferRequest, type TransferDetails } from "../types/imps";
 import { initiateIMPSTransfer } from "../services/nth.service";
 import { checkRemitterDetails } from "../services/imps.service";
 import { generateTransactionId } from "../utils/transaction_id_generator";
@@ -87,10 +87,22 @@ export const initiateIMPSTransferController = async (
 
     const txnId = generateTransactionId();
 
-    const request = {
-      ...parsedBody.data,
+    const request: TransferDetails = {
       txnId,
-      replyTo: "NTH-to-654321",
+      amount: amount,
+      remitterDetails: {
+        accountNo: remitterAccountNo ?? "",
+        ifscCode: remitterIFSCode ?? "",
+        contactNo: remitterMobileNo,
+
+        mmid: remitterMMID ?? "",
+      },
+      beneficiaryDetails: {
+        accountNo: beneficiaryAccountNo ?? "",
+        ifscCode: benificiaryIFSCode ?? "",
+        contactNo: beneficiaryMobileNo,
+        mmid: beneficiaryMMID ?? "",
+      },
     };
 
     const remitter = await checkRemitterDetails(

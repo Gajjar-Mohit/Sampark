@@ -144,8 +144,6 @@ export const debitBankAccount = async (
   }
 };
 
-
-
 export const creditBankAccount = async (
   accountNo: string,
   ifscCode: string,
@@ -245,5 +243,3 @@ export const creditBankAccount = async (
     throw new Error("Failed to debit bank account");
   }
 };
-
-

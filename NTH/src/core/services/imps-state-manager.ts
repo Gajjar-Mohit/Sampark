@@ -1,5 +1,5 @@
-import type { IMPSState } from "../../types/imps-state";
 import { redisClient } from "../..";
+import type { BeneficiaryDetails, RemitterDetails } from "../../types/imps";
 import { IMPS_FLOW } from "../imps-flow";
 import {
   creditToBeneficiary,
@@ -10,7 +10,8 @@ import {
 // Save remitter data - creates new transaction state or updates existing one
 export const saveRemitter = async (
   transactionId: string,
-  remitterData: any
+  remitterData: any,
+  amount: string
 ) => {
   console.log(`Storing remitter data for transaction: ${transactionId}`);
 
@@ -23,11 +24,13 @@ export const saveRemitter = async (
       // Parse existing state and update remitter data
       txState = JSON.parse(existingState);
       txState.remitterBank = remitterData;
+      txState.amount = amount;
       console.log("Updated existing transaction with remitter data");
     } else {
       // Create new transaction state with remitter data
       txState = {
         transactionId: transactionId,
+        amount,
         remitterBank: remitterData,
       };
       console.log("Created new transaction state with remitter data");
@@ -47,7 +50,8 @@ export const saveRemitter = async (
 // Save beneficiary data - updates existing transaction state
 export const saveBeneficiary = async (
   transactionId: string,
-  beneficiaryData: any
+  beneficiaryData: any,
+  amount?: string
 ) => {
   console.log(`Storing beneficiary data for transaction: ${transactionId}`);
 
@@ -63,6 +67,7 @@ export const saveBeneficiary = async (
       const txState = {
         transactionId: transactionId,
         beneficiaryBank: beneficiaryData,
+        amount: amount,
       };
       await redisClient.set(transactionId, JSON.stringify(txState));
       return txState;
@@ -71,7 +76,9 @@ export const saveBeneficiary = async (
     // Parse existing state and add beneficiary data
     const txState = JSON.parse(existingState);
     txState.beneficiaryBank = beneficiaryData;
-
+    if (amount) {
+      txState.amount = amount;
+    }
     // Save updated state to Redis
     await redisClient.set(transactionId, JSON.stringify(txState));
     console.log("Beneficiary data added to existing transaction");
@@ -101,31 +108,10 @@ export const getTXState = async (transactionId: string) => {
   }
 };
 
-// Optional: Combined save function (if you still want to save complete state at once)
-export const saveTXState = async (impsState: any) => {
-  console.log("Storing complete IMPS state to Redis");
-
-  try {
-    const existingState = await redisClient.get(impsState.transactionId);
-    if (!existingState) {
-      console.log("Creating new transaction state");
-    } else {
-      console.log("Updating existing transaction state");
-    }
-
-    await redisClient.set(impsState.transactionId, JSON.stringify(impsState));
-    console.log("Complete transaction state saved successfully");
-
-    return impsState;
-  } catch (error) {
-    console.error("Error saving complete transaction state:", error);
-    throw error;
-  }
-};
-
 export async function saveIntermidiateTXState(
   transactionId: string,
-  impsState: any
+  impsState: any,
+  amount?: string
 ) {
   try {
     // Validate inputs - this is the key fix
@@ -176,7 +162,7 @@ export async function saveIntermidiateTXState(
           contactNo: txState.beneficiaryBank.contactNo,
           mmid: txState.beneficiaryBank.mmid,
         },
-        amount: txState.remitterBank.amount,
+        amount: txState.amount,
       };
       console.log("Saving intermediate transaction state " + finalState);
       await redisClient.set(transactionId, JSON.stringify(finalState));
@@ -195,9 +181,11 @@ export async function processIMPSTransfer(
   key: string,
   value: string
 ) {
-  let beneficiaryBank;
-  let remitterBank;
+  let benificiaryBank: BeneficiaryDetails;
+  let remitterBank: RemitterDetails;
   try {
+    console.log(`Processing IMPS transfer message from topic: ${topic}`);
+    console.log(value);
     console.log(`Processing IMPS transfer message`);
     for (const state of IMPS_FLOW) {
       if (state.key === key) {
@@ -208,21 +196,17 @@ export async function processIMPSTransfer(
           processor: topic,
         });
         if (key === "imps-transfer") {
-          const {
-            remitterAccountNo,
-            remitterMobileNo,
-            remitterMMID,
-            remitterIFSCode,
-            amount,
-          } = data;
+          const { accountNo, contactNo, mmid, ifscCode } =
+            data.remitterDetails as RemitterDetails;
+          const { amount } = data;
+
           remitterBank = {
-            accountNo: remitterAccountNo,
-            ifscCode: remitterIFSCode,
-            contactNo: remitterMobileNo,
-            mmid: remitterMMID,
-            amount: amount,
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid,
           };
-          await saveRemitter(data.txnId, remitterBank);
+          await saveRemitter(data.txnId, remitterBank, amount);
           await verifyDetails(topic, key, value);
         } else if (key.includes("imps-transfer-error")) {
           console.log("IMPS transfer error received");
@@ -230,15 +214,15 @@ export async function processIMPSTransfer(
         } else if (key.includes("imps-transfer-verified-details")) {
           console.log("Beneficiary Verified");
           const res = JSON.parse(value);
-          beneficiaryBank = {
+          benificiaryBank = {
             accountNo: res.accountNo,
             ifscCode: res.ifscCode,
             contactNo: res.accountHolderContactNo,
             mmid: res.mmid,
-            amount: res.amount,
           };
-          await saveBeneficiary(data.txnId, beneficiaryBank);
+          await saveBeneficiary(data.txnId, benificiaryBank);
           const state = await getTXState(data.txnId);
+          console.log("Saving beneficiary data: " + JSON.stringify(state));
           if (!state) {
             console.log("State not found");
             return;
@@ -247,7 +231,8 @@ export async function processIMPSTransfer(
             topic,
             state.remitterBank,
             state.beneficiaryBank,
-            data.txnId
+            data.txnId,
+            state.amount
           );
 
           return;
@@ -262,7 +247,8 @@ export async function processIMPSTransfer(
             topic,
             state.remitterBank,
             state.beneficiaryBank,
-            data.txnId
+            data.txnId,
+            state.amount
           );
 
           return;

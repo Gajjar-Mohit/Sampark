@@ -84,7 +84,6 @@ services:
       - kafka-network
     volumes:
       - ./nth/src:/usr/src/app/src:ro
-      - ./nth/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for Redis to be ready...' &&
@@ -184,6 +183,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      IIN: "654321"
     depends_on:
       babu-rao-ganpatrao-bank-db:
         condition: service_healthy
@@ -221,6 +221,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      IIN: "789456"
     depends_on:
       chai-pani-db:
         condition: service_healthy
@@ -258,6 +259,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      IIN: "456123"
     depends_on:
       chinta-mat-karo-db:
         condition: service_healthy
@@ -295,6 +297,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      IIN: "321987"
     depends_on:
       paisa-vasool-bank-db:
         condition: service_healthy
