@@ -1,57 +1,33 @@
+import { de } from "zod/locales";
 import { kafka } from "..";
+import {
+  MessageType,
+  type VerifyDetailsRequest,
+  type TransferDetails,
+} from "../types/imps";
 import { getAccountByContactNo } from "./account.service";
 import { creditBankAccount, debitBankAccount } from "./imps.service";
+import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
 
-// Constants
-const IIN = "456123";
+const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
 const RECEIVE_TOPIC = `NTH-to-${IIN}`;
 const SEND_TOPIC = `${IIN}-to-NTH`;
 
-// Message types enum for better type safety
-enum MessageType {
-  VERIFY_DETAILS = "imps-transfer-verify-details",
-  DEBIT_REMITTER = "imps-transfer-debit-remitter",
-  CREDIT_BENEFICIARY = "imps-transfer-credit-beneficiary",
-  DEBIT_SUCCESS = "imps-transfer-debit-remitter-success",
-  CREDIT_SUCCESS = "imps-transfer-credit-benificiary-success",
-  VERIFIED_DETAILS = "imps-transfer-verified-details",
-  ACCOUNT_DETAILS = "account-details",
-  IMPS_TRANSFER = "imps-transfer",
-}
-
-// Interfaces for better type safety
-interface RemitterDetails {
-  accountNo: string;
-  ifscCode: string;
-  contactNo: string;
-  amount: string;
-}
-
-interface BeneficiaryDetails {
-  accountNo: string;
-  ifscCode: string;
-  contactNo: string;
-}
-
-interface TransferDetails {
-  remitterDetails: RemitterDetails;
-  beneficiaryDetails: BeneficiaryDetails;
-  txnId: string;
-}
-
-interface VerifyDetailsRequest {
-  accountNo: string;
-  ifscCode: string;
-  requestedBy: string;
-  txnId: string;
+interface PendingRequest {
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
+  timestamp: number;
 }
 
 class IMPSKafkaService {
   private consumer = kafka.consumer({ groupId: GROUP_ID });
   private producer = kafka.producer();
   private isConnected = false;
+  private pendingRequests = new Map<string, PendingRequest>();
+  private readonly TIMEOUT_MS = 30000;
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -63,10 +39,30 @@ class IMPSKafkaService {
 
       this.isConnected = true;
       console.log(`Kafka service initialized for IIN: ${IIN}`);
+
+      // Start cleanup interval once
+      this.startCleanupInterval();
     } catch (error) {
       console.error("Failed to initialize Kafka service:", error);
       throw error;
     }
+  }
+
+  private startCleanupInterval(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+
+    // Clean up expired requests
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [txnId, request] of this.pendingRequests.entries()) {
+        if (now - request.timestamp > this.TIMEOUT_MS) {
+          this.pendingRequests.delete(txnId);
+          request.reject(new Error("Request timeout"));
+        }
+      }
+    }, 5000); // Check every 5 seconds
   }
 
   async listenForNTH(): Promise<void> {
@@ -108,9 +104,122 @@ class IMPSKafkaService {
       case MessageType.CREDIT_BENEFICIARY:
         await this.handleCreditRequest(value);
         break;
+      case MessageType.IMPS_TRANSFER_COMPLETE:
+        await this.handleIMPSTranferComplete(value);
+        break;
+      case MessageType.IMPS_TRANSFER_ERROR:
+        await this.handleIMPSTranferError(value);
+        break;
+
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleIMPSTranferError(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling IMPS transfer error", details);
+      await saveLog({
+        transactionId: details.txnId,
+        data: {
+          mode: "IMPS",
+          amount: details.amount,
+          status: "ERROR",
+          reasonOfFailure: details,
+          remitterAccount: {
+            accountNo: details.remitterDetails.accountNo,
+            ifscCode: details.remitterDetails.ifscCode,
+            contactNo: details.remitterDetails.contactNo,
+            mmid: details.remitterDetails.mmid,
+          },
+          beneficiaryAccount: {
+            accountNo: details.beneficiaryDetails.accountNo,
+            ifscCode: details.beneficiaryDetails.ifscCode,
+            contactNo: details.beneficiaryDetails.contactNo,
+            mmid: details.beneficiaryDetails.mmid,
+          },
+        },
+      });
+
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingRequests.get(details.txnId)!;
+        this.pendingRequests.delete(details.txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.reject(new Error(details.reasonOfFailure));
+      }
+    } catch (error) {
+      console.error("Error handling IMPS transfer error:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingRequests.get(details.txnId)!;
+          this.pendingRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
+    }
+  }
+
+  private async handleIMPSTranferComplete(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling IMPS transfer complete", details);
+
+      await saveLog({
+        transactionId: details.txnId,
+        data: {
+          mode: "IMPS",
+          amount: details.amount,
+          status: "COMPLETE",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo: details.remitterDetails.accountNo,
+            ifscCode: details.remitterDetails.ifscCode,
+            contactNo: details.remitterDetails.contactNo,
+            mmid: details.remitterDetails.mmid,
+          },
+          beneficiaryAccount: {
+            accountNo: details.beneficiaryDetails.accountNo,
+            ifscCode: details.beneficiaryDetails.ifscCode,
+            contactNo: details.beneficiaryDetails.contactNo,
+            mmid: details.beneficiaryDetails.mmid,
+          },
+        },
+      });
+
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingRequests.get(details.txnId)!;
+        this.pendingRequests.delete(details.txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...details,
+          status: "COMPLETE",
+        });
+      }
+    } catch (error) {
+      console.error("Error handling IMPS transfer complete:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingRequests.get(details.txnId)!;
+          this.pendingRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
     }
   }
 
@@ -142,14 +251,12 @@ class IMPSKafkaService {
   private async handleDebitRequest(value: string): Promise<void> {
     try {
       const data: TransferDetails = JSON.parse(value);
-      const { remitterDetails, beneficiaryDetails, txnId } = data;
-      const amount = Number.parseFloat(remitterDetails.amount);
+      console.log(data);
+      const { remitterDetails, beneficiaryDetails, txnId, amount } = data;
+      const parsedAmount = Number.parseFloat(amount);
 
-      if (isNaN(amount) || amount <= 0) {
-        console.error(
-          "Invalid amount for debit request:",
-          remitterDetails.amount
-        );
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        console.error("Invalid amount for debit request:", amount);
         return;
       }
 
@@ -158,11 +265,11 @@ class IMPSKafkaService {
           remitterDetails.accountNo,
           remitterDetails.ifscCode,
           remitterDetails.contactNo,
-          amount
+          parsedAmount
         ),
         storeTransaction(
           txnId,
-          amount,
+          parsedAmount,
           "DEBIT",
           remitterDetails.accountNo,
           `IMPS/${beneficiaryDetails.accountNo}`
@@ -185,14 +292,12 @@ class IMPSKafkaService {
   private async handleCreditRequest(value: string): Promise<void> {
     try {
       const data: TransferDetails = JSON.parse(value);
-      const { remitterDetails, beneficiaryDetails, txnId } = data;
-      const amount = Number.parseFloat(remitterDetails.amount);
 
-      if (isNaN(amount) || amount <= 0) {
-        console.error(
-          "Invalid amount for credit request:",
-          remitterDetails.amount
-        );
+      const { remitterDetails, beneficiaryDetails, txnId, amount } = data;
+      const parsedAmount = Number.parseFloat(amount);
+
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        console.error("Invalid amount for credit request:", amount);
         return;
       }
 
@@ -201,11 +306,11 @@ class IMPSKafkaService {
           beneficiaryDetails.accountNo,
           beneficiaryDetails.ifscCode,
           beneficiaryDetails.contactNo,
-          amount
+          parsedAmount
         ),
         storeTransaction(
           txnId,
-          amount,
+          parsedAmount,
           "CREDIT",
           beneficiaryDetails.accountNo,
           `IMPS/${remitterDetails.accountNo}`
@@ -247,25 +352,101 @@ class IMPSKafkaService {
     await this.sendResponse(MessageType.ACCOUNT_DETAILS, "Not Found");
   }
 
-  async initiateIMPSTransfer(details: TransferDetails): Promise<void> {
+  // Updated method that returns a Promise and waits for completion
+  async initiateIMPSTransfer(details: TransferDetails): Promise<any> {
     try {
       if (!this.isConnected) {
         await this.initialize();
       }
 
+      // Save initial log
+      if (details.remitterDetails && details.beneficiaryDetails) {
+        await saveLog({
+          transactionId: details.txnId,
+          data: {
+            mode: "IMPS",
+            amount: details.amount,
+            status: "PENDING",
+            reasonOfFailure: "",
+            remitterAccount: {
+              accountNo: details.remitterDetails.accountNo,
+              ifscCode: details.remitterDetails.ifscCode,
+              contactNo: details.remitterDetails.contactNo,
+              mmid: details.remitterDetails.mmid,
+            },
+            beneficiaryAccount: {
+              accountNo: details.beneficiaryDetails.accountNo,
+              ifscCode: details.beneficiaryDetails.ifscCode,
+              contactNo: details.beneficiaryDetails.contactNo,
+              mmid: details.beneficiaryDetails.mmid,
+            },
+          },
+        });
+      }
+
+      // Create promise that will be resolved when IMPS_TRANSFER_COMPLETE is received
+      const transferPromise = new Promise((resolve, reject) => {
+        // Set timeout
+        const timeoutId = setTimeout(() => {
+          if (this.pendingRequests.has(details.txnId)) {
+            this.pendingRequests.delete(details.txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingRequests.set(details.txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      // Send the transfer request
       await this.sendResponse(
         MessageType.IMPS_TRANSFER,
         JSON.stringify(details)
       );
-      console.log("IMPS transfer initiated successfully");
+
+      console.log("IMPS transfer initiated, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
     } catch (error) {
       console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        this.pendingRequests.delete(details.txnId);
+      }
+
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
     try {
+      // Clear cleanup interval
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        this.cleanupInterval = null;
+      }
+
+      // Reject all pending requests
+      for (const [txnId, request] of this.pendingRequests.entries()) {
+        request.reject(new Error("Service disconnected"));
+      }
+      this.pendingRequests.clear();
+
       await Promise.all([
         this.consumer.disconnect(),
         this.producer.disconnect(),
@@ -278,7 +459,6 @@ class IMPSKafkaService {
   }
 }
 
-// Lazy singleton initialization
 let impsKafkaService: IMPSKafkaService;
 
 function getIMPSKafkaService(): IMPSKafkaService {
@@ -289,7 +469,9 @@ function getIMPSKafkaService(): IMPSKafkaService {
 }
 
 export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
-export const initiateIMPSTransfer = (details: TransferDetails) => 
+
+// Updated export that returns a Promise
+export const initiateIMPSTransfer = (details: TransferDetails): Promise<any> =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
 
 export default getIMPSKafkaService;

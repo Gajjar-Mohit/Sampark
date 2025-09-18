@@ -20,10 +20,12 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/kafkajs": "^1.9.0",
+    "@types/redis": "^4.0.11",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "kafkajs": "^2.2.4",
     "prisma": "^6.15.0",
+    "redis": "^5.8.2",
     "zod": "^4.1.5"
   }
 }

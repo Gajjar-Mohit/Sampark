@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { IMPS_TranferRequest } from "../types/imps";
+import { IMPS_TranferRequest, type TransferDetails } from "../types/imps";
 import { initiateIMPSTransfer } from "../services/nth.service";
 import { checkRemitterDetails } from "../services/imps.service";
 import { generateTransactionId } from "../utils/transaction_id_generator";
@@ -87,10 +87,22 @@ export const initiateIMPSTransferController = async (
 
     const txnId = generateTransactionId();
 
-    const request = {
-      ...parsedBody.data,
+    const request: TransferDetails = {
       txnId,
-      replyTo: "NTH-to-321987",
+      amount: amount,
+      remitterDetails: {
+        accountNo: remitterAccountNo ?? "",
+        ifscCode: remitterIFSCode ?? "",
+        contactNo: remitterMobileNo,
+
+        mmid: remitterMMID ?? "",
+      },
+      beneficiaryDetails: {
+        accountNo: beneficiaryAccountNo ?? "",
+        ifscCode: benificiaryIFSCode ?? "",
+        contactNo: beneficiaryMobileNo,
+        mmid: beneficiaryMMID ?? "",
+      },
     };
 
     const remitter = await checkRemitterDetails(
@@ -105,9 +117,18 @@ export const initiateIMPSTransferController = async (
         message: "Remitter details not found",
       });
     } else {
-      console.log("Remitter details found");
-      await initiateIMPSTransfer(request);
+      try {
+        const response = await initiateIMPSTransfer(request);
+        return res
+          .status(200)
+          .json({ status: "Transfer complete", data: response });
+      } catch (error) {
+        return res.status(500).json({
+          status: "ERROR",
+          message: "Error initiating transfer",
+          error: error,
+        });
+      }
     }
-    res.status(200).json({ status: "OK" });
   }
 };

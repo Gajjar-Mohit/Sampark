@@ -28,24 +28,6 @@ interface Account {
 }
 
 /**
- * Finds and returns the account for a given bank code and PAN card.
- * @param allAccounts - The array of all user accounts.
- * @param bankCode - The bank code to search for (e.g., "BRG", "CPB").
- * @param panCardNo - The PAN card number to match.
- * @returns The matching account object, or undefined if not found.
- */
-function findAccountByBankAndPan(
-  allAccounts: Account[],
-  bankCode: string,
-  panCardNo: string
-): Account | undefined {
-  return allAccounts.find(
-    (account) =>
-      account.ifscCode.startsWith(bankCode) && account.panCardNo === panCardNo
-  );
-}
-
-/**
  * Gets the bank code from IFSC code
  * @param ifscCode - The IFSC code
  * @returns The bank code (first 3 characters)
@@ -164,6 +146,7 @@ describe("IMPS Transfer Combinations", () => {
               // Assert response
               expect(response.status).toBe(200);
               expect(response.data).toBeDefined();
+              expect(response.data.status).toBe("Transfer complete");
             },
             15000 // Increased timeout
           );

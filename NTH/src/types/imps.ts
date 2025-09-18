@@ -1,16 +1,18 @@
-import z from "zod";
-
-export const IMPS_TranferRequest = z.object({
-  beneficiaryAccountNo: z.string().optional(),
-  beneficiaryMobileNo: z.string(),
-  beneficiaryMMID: z.string().optional(),
-  benificiaryIFSCode: z.string().optional(),
-  amount: z.string(),
-  remitterAccountNo: z.string().optional(),
-  remitterMobileNo: z.string(),
-  remitterMMID: z.string().optional(),
-  remitterIFSCode: z.string().optional(),
-});
+export interface IMPSState {
+  transactionId: string;
+  correlationId?: string;
+  currentStep: string;
+  previousStep: string;
+  stepSequence: number;
+  data: any;
+  processingHistory?: ProcessingHistorry[];
+  processor: string;
+}
+export interface ProcessingHistorry {
+  step: string;
+  timestamp: string;
+  processor: string;
+}
 
 
 export enum MessageType {
@@ -22,8 +24,6 @@ export enum MessageType {
   VERIFIED_DETAILS = "imps-transfer-verified-details",
   ACCOUNT_DETAILS = "account-details",
   IMPS_TRANSFER = "imps-transfer",
-  IMPS_TRANSFER_COMPLETE = "imps-transfer-complete",
-  IMPS_TRANSFER_ERROR = "imps-transfer-error",
 }
 
 export interface RemitterDetails {
