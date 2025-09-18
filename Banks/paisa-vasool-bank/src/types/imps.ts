@@ -23,6 +23,7 @@ export enum MessageType {
   ACCOUNT_DETAILS = "account-details",
   IMPS_TRANSFER = "imps-transfer",
   IMPS_TRANSFER_COMPLETE = "imps-transfer-complete",
+  IMPS_TRANSFER_ERROR = "imps-transfer-error",
 }
 
 export interface RemitterDetails {

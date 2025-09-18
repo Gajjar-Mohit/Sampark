@@ -107,9 +107,64 @@ class IMPSKafkaService {
       case MessageType.IMPS_TRANSFER_COMPLETE:
         await this.handleIMPSTranferComplete(value);
         break;
+      case MessageType.IMPS_TRANSFER_ERROR:
+        await this.handleIMPSTranferError(value);
+        break;
+
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleIMPSTranferError(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling IMPS transfer error", details);
+      await saveLog({
+        transactionId: details.txnId,
+        data: {
+          mode: "IMPS",
+          amount: details.amount,
+          status: "ERROR",
+          reasonOfFailure: details,
+          remitterAccount: {
+            accountNo: details.remitterDetails.accountNo,
+            ifscCode: details.remitterDetails.ifscCode,
+            contactNo: details.remitterDetails.contactNo,
+            mmid: details.remitterDetails.mmid,
+          },
+          beneficiaryAccount: {
+            accountNo: details.beneficiaryDetails.accountNo,
+            ifscCode: details.beneficiaryDetails.ifscCode,
+            contactNo: details.beneficiaryDetails.contactNo,
+            mmid: details.beneficiaryDetails.mmid,
+          },
+        },
+      });
+
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingRequests.get(details.txnId)!;
+        this.pendingRequests.delete(details.txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.reject(new Error(details.reasonOfFailure));
+      }
+    } catch (error) {
+      console.error("Error handling IMPS transfer error:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingRequests.get(details.txnId)!;
+          this.pendingRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
     }
   }
 
