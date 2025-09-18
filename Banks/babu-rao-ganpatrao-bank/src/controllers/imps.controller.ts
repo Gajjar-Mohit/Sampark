@@ -117,9 +117,18 @@ export const initiateIMPSTransferController = async (
         message: "Remitter details not found",
       });
     } else {
-      console.log("Remitter details found");
-      await initiateIMPSTransfer(request);
+     try {
+       const response = await initiateIMPSTransfer(request);
+       return res
+         .status(200)
+         .json({ status: "Transfer complete", data: response });
+     } catch (error) {
+       return res.status(500).json({
+         status: "ERROR",
+         message: "Error initiating transfer",
+         error: error,
+       });
+     }
     }
-    res.status(200).json({ status: "OK" });
   }
 };

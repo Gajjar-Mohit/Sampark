@@ -15,10 +15,19 @@ const GROUP_ID = `NTH-to${IIN}-group`;
 const RECEIVE_TOPIC = `NTH-to-${IIN}`;
 const SEND_TOPIC = `${IIN}-to-NTH`;
 
+interface PendingRequest {
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
+  timestamp: number;
+}
+
 class IMPSKafkaService {
   private consumer = kafka.consumer({ groupId: GROUP_ID });
   private producer = kafka.producer();
   private isConnected = false;
+  private pendingRequests = new Map<string, PendingRequest>();
+  private readonly TIMEOUT_MS = 30000;
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -30,10 +39,30 @@ class IMPSKafkaService {
 
       this.isConnected = true;
       console.log(`Kafka service initialized for IIN: ${IIN}`);
+
+      // Start cleanup interval once
+      this.startCleanupInterval();
     } catch (error) {
       console.error("Failed to initialize Kafka service:", error);
       throw error;
     }
+  }
+
+  private startCleanupInterval(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+
+    // Clean up expired requests
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [txnId, request] of this.pendingRequests.entries()) {
+        if (now - request.timestamp > this.TIMEOUT_MS) {
+          this.pendingRequests.delete(txnId);
+          request.reject(new Error("Request timeout"));
+        }
+      }
+    }, 5000); // Check every 5 seconds
   }
 
   async listenForNTH(): Promise<void> {
@@ -88,6 +117,7 @@ class IMPSKafkaService {
     try {
       const details = JSON.parse(value);
       console.log("Handling IMPS transfer complete", details);
+
       await saveLog({
         transactionId: details.txnId,
         data: {
@@ -109,10 +139,35 @@ class IMPSKafkaService {
           },
         },
       });
+
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingRequests.get(details.txnId)!;
+        this.pendingRequests.delete(details.txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...details,
+          status: "COMPLETE",
+        });
+      }
     } catch (error) {
       console.error("Error handling IMPS transfer complete:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingRequests.get(details.txnId)!;
+          this.pendingRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
     }
   }
+
   private async handleVerifyDetails(value: string): Promise<void> {
     try {
       const details: VerifyDetailsRequest = JSON.parse(value);
@@ -242,15 +297,14 @@ class IMPSKafkaService {
     await this.sendResponse(MessageType.ACCOUNT_DETAILS, "Not Found");
   }
 
-  async initiateIMPSTransfer(details: TransferDetails): Promise<void> {
+  // Updated method that returns a Promise and waits for completion
+  async initiateIMPSTransfer(details: TransferDetails): Promise<any> {
     try {
       if (!this.isConnected) {
         await this.initialize();
       }
-      await this.sendResponse(
-        MessageType.IMPS_TRANSFER,
-        JSON.stringify(details)
-      );
+
+      // Save initial log
       if (details.remitterDetails && details.beneficiaryDetails) {
         await saveLog({
           transactionId: details.txnId,
@@ -274,15 +328,70 @@ class IMPSKafkaService {
           },
         });
       }
-      console.log("IMPS transfer initiated successfully");
+
+      // Create promise that will be resolved when IMPS_TRANSFER_COMPLETE is received
+      const transferPromise = new Promise((resolve, reject) => {
+        // Set timeout
+        const timeoutId = setTimeout(() => {
+          if (this.pendingRequests.has(details.txnId)) {
+            this.pendingRequests.delete(details.txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingRequests.set(details.txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      // Send the transfer request
+      await this.sendResponse(
+        MessageType.IMPS_TRANSFER,
+        JSON.stringify(details)
+      );
+
+      console.log("IMPS transfer initiated, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
     } catch (error) {
       console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        this.pendingRequests.delete(details.txnId);
+      }
+
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
     try {
+      // Clear cleanup interval
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+        this.cleanupInterval = null;
+      }
+
+      // Reject all pending requests
+      for (const [txnId, request] of this.pendingRequests.entries()) {
+        request.reject(new Error("Service disconnected"));
+      }
+      this.pendingRequests.clear();
+
       await Promise.all([
         this.consumer.disconnect(),
         this.producer.disconnect(),
@@ -295,7 +404,6 @@ class IMPSKafkaService {
   }
 }
 
-// Lazy singleton initialization
 let impsKafkaService: IMPSKafkaService;
 
 function getIMPSKafkaService(): IMPSKafkaService {
@@ -306,7 +414,9 @@ function getIMPSKafkaService(): IMPSKafkaService {
 }
 
 export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
-export const initiateIMPSTransfer = (details: TransferDetails) =>
+
+// Updated export that returns a Promise
+export const initiateIMPSTransfer = (details: TransferDetails): Promise<any> =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
 
 export default getIMPSKafkaService;
