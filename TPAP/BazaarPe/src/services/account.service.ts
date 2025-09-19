@@ -16,13 +16,22 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
   }
 
   try {
-    const response = await axios.post(
-      "http://localhost:3004/api/v1/tpap/check",
-      {
-        contactNo,
-        ifscCode,
-      }
-    );
+    let data = JSON.stringify({
+      contactNo,
+      ifscCode,
+    });
+
+    let config = {
+      method: "post",
+      url: "http://localhost:3004/api/v1/tpap/check",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: data,
+    };
+
+    const response = await axios.request(config);
+
     if (!response.data.data) {
       throw new Error("Invalid response from PSP");
     }
@@ -40,6 +49,6 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
     }
     return response.data.data;
   } catch (error) {
-    console.log(error);
+    return error;
   }
 };

@@ -4,6 +4,6 @@ import { getAllTransactionsController } from "../controllers/transaction.control
 
 const transactionRouter = Router()
 
-transactionRouter.post("all", asyncHandler(getAllTransactionsController))
+transactionRouter.post("/all", asyncHandler(getAllTransactionsController))
 
 export default transactionRouter

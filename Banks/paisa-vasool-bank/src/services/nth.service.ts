@@ -1,14 +1,12 @@
 import { de } from "zod/locales";
 import { kafka } from "..";
-import {
-  MessageType,
-  type VerifyDetailsRequest,
-  type TransferDetails,
-} from "../types/imps";
+import { type VerifyDetailsRequest, type TransferDetails } from "../types/imps";
 import { getAccountByContactNo } from "./account.service";
 import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
+import { MessageType } from "../types/nth";
+import { request } from "express";
 
 const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
@@ -95,6 +93,7 @@ class IMPSKafkaService {
     console.log(`Processing message - Key: ${key}`);
 
     switch (key) {
+      //IMPS Transfer
       case MessageType.VERIFY_DETAILS:
         await this.handleVerifyDetails(value);
         break;
@@ -110,6 +109,14 @@ class IMPSKafkaService {
       case MessageType.IMPS_TRANSFER_ERROR:
         await this.handleIMPSTranferError(value);
         break;
+
+      //UPI Transfer
+      case MessageType.ADD_BANK_DETAILS:
+        await this.addBank(value);
+        break;
+      // case MessageType.BANK_DETAILS_ADDED:
+      //   await this.handleBankDetailsAdded(value);
+      //   break;
 
       default:
         console.warn(`Unknown message type: ${key}`);
@@ -238,7 +245,7 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(
+      await this.sendToNth(
         MessageType.VERIFIED_DETAILS,
         JSON.stringify(account)
       );
@@ -283,7 +290,7 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(MessageType.DEBIT_SUCCESS, value);
+      await this.sendToNth(MessageType.DEBIT_SUCCESS, value);
     } catch (error) {
       console.error("Error handling debit request:", error);
     }
@@ -324,13 +331,13 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(MessageType.CREDIT_SUCCESS, value);
+      await this.sendToNth(MessageType.CREDIT_SUCCESS, value);
     } catch (error) {
       console.error("Error handling credit request:", error);
     }
   }
 
-  private async sendResponse(key: string, value: string): Promise<void> {
+  private async sendToNth(key: string, value: string): Promise<void> {
     try {
       await this.producer.send({
         topic: SEND_TOPIC,
@@ -349,7 +356,7 @@ class IMPSKafkaService {
   }
 
   private async sendNotFoundResponse(): Promise<void> {
-    await this.sendResponse(MessageType.ACCOUNT_DETAILS, "Not Found");
+    await this.sendToNth(MessageType.ACCOUNT_DETAILS, "Not Found");
   }
 
   // Updated method that returns a Promise and waits for completion
@@ -412,10 +419,7 @@ class IMPSKafkaService {
       });
 
       // Send the transfer request
-      await this.sendResponse(
-        MessageType.IMPS_TRANSFER,
-        JSON.stringify(details)
-      );
+      await this.sendToNth(MessageType.IMPS_TRANSFER, JSON.stringify(details));
 
       console.log("IMPS transfer initiated, waiting for completion...");
 
@@ -431,6 +435,132 @@ class IMPSKafkaService {
 
       throw error;
     }
+  }
+
+  async initAddBank(contactNo: string, ifscCode: string, txnId: string) {
+    try {
+      if (!this.isConnected) {
+        await this.initialize();
+      }
+
+      // Save initial log
+      // if (contactNo && ifscCode && txnId) {
+      //   await saveLog({
+      //     transactionId: txnId,
+      //     data: {
+      //       mode: "UPI",
+      //       amount: details.amount,
+      //       status: "PENDING",
+      //       reasonOfFailure: "",
+      //       remitterAccount: {
+      //         accountNo: details.remitterDetails.accountNo,
+      //         ifscCode: details.remitterDetails.ifscCode,
+      //         contactNo: details.remitterDetails.contactNo,
+      //         mmid: details.remitterDetails.mmid,
+      //       },
+      //       beneficiaryAccount: {
+      //         accountNo: details.beneficiaryDetails.accountNo,
+      //         ifscCode: details.beneficiaryDetails.ifscCode,
+      //         contactNo: details.beneficiaryDetails.contactNo,
+      //         mmid: details.beneficiaryDetails.mmid,
+      //       },
+      //     },
+      //   });
+      // }
+
+      // Create promise that will be resolved when IMPS_TRANSFER_COMPLETE is received
+      const transferPromise = new Promise((resolve, reject) => {
+        // Set timeout
+        const timeoutId = setTimeout(() => {
+          if (this.pendingRequests.has(txnId)) {
+            this.pendingRequests.delete(txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingRequests.set(txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      await this.sendToNth(
+        MessageType.ADD_BANK_DETAILS,
+        JSON.stringify({
+          txnId,
+          contactNo,
+          ifscCode,
+          requestedBy: RECEIVE_TOPIC,
+        })
+      );
+
+      console.log("IMPS transfer initiated, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
+    } catch (error) {
+      console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (txnId && this.pendingRequests.has(txnId)) {
+        this.pendingRequests.delete(txnId);
+      }
+
+      throw error;
+    }
+  }
+
+  async addBank(value: string) {
+    try {
+      const data = JSON.parse(value);
+      console.log(data);
+      const { txnId, contactNo, ifscCode, requestedBy } = data;
+      console.log("Adding bank details");
+
+      if (!contactNo || !ifscCode || !txnId) {
+        const key = "upi-bank-details-adding-error";
+        const value = "Missing contact number or IFSC code or TXN ID";
+        await this.sendToNth(key, value);
+        return;
+      }
+
+      const bankAccount = await getAccountByContactNo(
+        contactNo,
+        ifscCode,
+        requestedBy,
+        txnId
+      );
+
+      if (!bankAccount) {
+        const key = "upi-bank-details-adding-error";
+        const value = "Bank account not found";
+        await this.sendToNth(key, value);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.BANK_DETAILS_ADDED,
+        JSON.stringify({
+          ...bankAccount,
+        })
+      );
+    } catch (error) {
+      console.error("Failed to initialize Kafka service:", error);
+      throw error;
+    }
+    // Save initial log
+    // if (contactNo && ifscCode && txnId) {
   }
 
   async disconnect(): Promise<void> {
@@ -473,5 +603,11 @@ export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
 // Updated export that returns a Promise
 export const initiateIMPSTransfer = (details: TransferDetails): Promise<any> =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
+
+export const verifyBankDetails = (
+  contactNo: string,
+  ifscCode: string,
+  txnId: string
+) => getIMPSKafkaService().initAddBank(contactNo, ifscCode, txnId);
 
 export default getIMPSKafkaService;

@@ -1,6 +1,6 @@
 import { kafka } from "..";
 import { registeredBanks } from "../core/registered-banks";
-import { processIMPSTransfer } from "../core/processor/imps-state-manager";
+import { processIMPSTransfer } from "../core/manager/imps-state-manager";
 
 export async function listenForRequests() {
   try {

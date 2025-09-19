@@ -7,5 +7,5 @@
 4. NPCI deducts Alice’s HDFC bank account by INR 100
 
 5. NPCI sends an instruction to SBI bank and add INR 100 to Bob’s account in SBI bank.
-
+ 
 6. Upon success, NPCI notifies the payment apps via acquiring banks.
