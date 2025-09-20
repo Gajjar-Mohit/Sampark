@@ -379,11 +379,99 @@ services:
       - paisa_vasool_bank_redis_data:/data
     restart: unless-stopped
 
-  # PostgreSQL Database for Project 2
-  
+  bazzar-pe-db:
+    image: postgres:15-alpine
+    container_name: bazzar-pe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bazzar-pe-db
+      POSTGRES_USER: bazzar-pe_user
+      POSTGRES_PASSWORD: bazzar-pe_password
 
-  # Express App for Project 2
-  
+    volumes:
+      - postgres_bazzar-pe_data:/var/lib/postgresql/data
+    networks:
+      - bazzar-pe-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bazzar-pe_user -d bazzar-pe-db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bazzar-pe-service:
+    build:
+      context: ./tpap/BazaarPe
+      dockerfile: Dockerfile
+    container_name: bazzar-pe-service
+    restart: unless-stopped
+    ports:
+      - "6001:8000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://bazzar-pe_user:bazzar-pe_password@bazzar-pe-db:5432/bazzar-pe-db
+      PSP_URL: http://paisa-vasool-bank-service:3000/api/v1
+      PORT: 8000
+    depends_on:
+      bazzar-pe-db:
+        condition: service_healthy
+    networks:
+      - bazzar-pe-network
+      - paisa-vasool-bank-network
+    volumes:
+      - ./tpap/BazaarPe/src:/usr/src/app/src:ro
+      - ./tpap/BazaarPe/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy &&
+        bun run dev
+      "  
+  chillar-pay-db:
+    image: postgres:15-alpine
+    container_name: chillar-pay-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chillar-pay_db
+      POSTGRES_USER: chillar-pay_user
+      POSTGRES_PASSWORD: chillar-pay_password 
+    volumes:
+      - postgres_chillar-pay_data:/var/lib/postgresql/data
+    networks:
+      - chillar-pay-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chillar-pay_user -d chillar-pay_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chillar-pay-service:
+    build:
+      context: ./tpap/ChillarPay
+      dockerfile: Dockerfile
+    container_name: chillar-pay-service
+    restart: unless-stopped
+    ports:
+      - "6002:8000" 
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chillar-pay_user:chillar-pay_password@chillar-pay-db:5432/chillar-pay_db
+      PORT: 8000
+      PSP_URL: http://chinta-mat-karo-service:3000/api/v1
+    depends_on:
+      chillar-pay-db:
+        condition: service_healthy
+    networks:
+      - chillar-pay-network
+      - chinta-mat-karo-network
+    volumes:
+      - ./tpap/ChillarPay/src:/usr/src/app/src:ro
+      - ./tpap/ChillarPay/prisma:/usr/src/app/prisma:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        bun prisma migrate deploy &&
+        bun run dev
+      "
   
 networks:
   kafka-network:
@@ -400,6 +488,7 @@ networks:
     driver: bridge
   chillar-pay-network:
     driver: bridge
+
 
 volumes:
   redis-data:

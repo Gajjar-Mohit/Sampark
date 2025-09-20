@@ -21,9 +21,11 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
       ifscCode,
     });
 
+    const url = process.env.PSP_URL;
+
     let config = {
       method: "post",
-      url: "http://localhost:3004/api/v1/tpap/check",
+      url: url + "/tpap/check",
       headers: {
         "Content-Type": "application/json",
       },

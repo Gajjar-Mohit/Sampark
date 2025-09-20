@@ -27,16 +27,19 @@ services:
     container_name: bazzar-pe-service
     restart: unless-stopped
     ports:
-      - "6001:8000"  # Different port to avoid conflicts
+      - "6001:8000"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://bazzar-pe_user:bazzar-pe_password@bazzar-pe-db:5432/bazzar-pe-db
+
+      PSP_URL: http://localhost:3004/api/v1
       PORT: 8000
     depends_on:
       bazzar-pe-db:
         condition: service_healthy
     networks:
       - bazzar-pe-network
+      - sampark_paisa-vasool-bank-network
     volumes:
       - ./BazaarPe/src:/usr/src/app/src:ro
       - ./BazaarPe/prisma:/usr/src/app/prisma:ro
@@ -76,6 +79,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://chillar-pay_user:chillar-pay_password@chillar-pay-db:5432/chillar-pay_db
       PORT: 8000
+      PSP_URL: http://localhost:3004/api/v1
     depends_on:
       chillar-pay-db:
         condition: service_healthy
@@ -90,6 +94,8 @@ services:
         bun prisma migrate deploy &&
         bun run dev
       "
+
+
 networks:
   bazzar-pe-network:
     driver: bridge
