@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
-import { CheckBankDetailsRequest } from "../types/tpap";
-import { getBankDetails } from "../services/tpap.service";
+import { CheckBankDetailsRequest } from "../types/upi";
+import { verifyBankDetails } from "../services/nth.service";
+import { generateTransactionId } from "../utils/transaction_id_generator";
+
 export const getBankDetailsController = async (req: Request, res: Response) => {
   const parsedBody = CheckBankDetailsRequest.safeParse(req.body);
   if (!parsedBody.success) {
@@ -10,9 +12,12 @@ export const getBankDetailsController = async (req: Request, res: Response) => {
     });
   }
 
-  const response = await getBankDetails(
+  const txnId = generateTransactionId();
+
+  const response = await verifyBankDetails(
     parsedBody.data.contactNo,
-    parsedBody.data.ifscCode
+    parsedBody.data.ifscCode,
+    txnId
   );
 
   return res.status(200).json({

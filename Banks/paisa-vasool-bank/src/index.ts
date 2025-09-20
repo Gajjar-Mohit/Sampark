@@ -50,7 +50,7 @@ async function startServices() {
 }
 
 const redisClient = await createRedisClient();
-// Start services
+
 startServices();
 
 const PORT = parseInt(process.env.PORT || "3000", 10);

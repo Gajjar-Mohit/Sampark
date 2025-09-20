@@ -4,6 +4,6 @@ import { asyncHandler } from "../utils/route_wrapper";
 
 const tpapRouter = Router();
 
-tpapRouter.post("/check",asyncHandler(getBankDetailsController));
+tpapRouter.post("/check", asyncHandler(getBankDetailsController));
 
 export default tpapRouter;

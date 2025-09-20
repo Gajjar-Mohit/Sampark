@@ -29,7 +29,7 @@ services:
     container_name: bazzar-pe-service
     restart: unless-stopped
     ports:
-      - "8001:8000"  # Different port to avoid conflicts
+      - "6000:8000"  # Different port to avoid conflicts
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://bazzar-pe_user:bazzar-pe_password@bazzar-pe-db:5432/bazzar-pe-db
