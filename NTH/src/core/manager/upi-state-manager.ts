@@ -16,7 +16,6 @@ export async function processUPITransfer(
     console.log("Adding bank details");
     await addBankDetails(topic, key, value);
   } else if (key === "upi-bank-details-added") {
-
     if (!data) {
       const key = "upi-error";
       const value = "Missing account details";
@@ -25,6 +24,5 @@ export async function processUPITransfer(
     }
 
     await forwardToBank(data.requestedBy, key, value);
-  
   }
 }

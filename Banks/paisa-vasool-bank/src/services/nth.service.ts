@@ -1,7 +1,7 @@
 import { de } from "zod/locales";
 import { kafka } from "..";
 import { type VerifyDetailsRequest, type TransferDetails } from "../types/imps";
-import { getAccountByContactNo } from "./account.service";
+import { getAccountByContact, getAccountByContactNo } from "./account.service";
 import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
@@ -114,9 +114,9 @@ class IMPSKafkaService {
       case MessageType.ADD_BANK_DETAILS:
         await this.addBank(value);
         break;
-      // case MessageType.BANK_DETAILS_ADDED:
-      //   await this.handleBankDetailsAdded(value);
-      //   break;
+      case MessageType.BANK_DETAILS_ADDED:
+        await this.handleBankDetailsAdded(value);
+        break;
 
       default:
         console.warn(`Unknown message type: ${key}`);
@@ -252,6 +252,25 @@ class IMPSKafkaService {
     } catch (error) {
       console.error("Error handling verify details:", error);
       await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleBankDetailsAdded(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingRequests.get(details.txnId)!;
+        this.pendingRequests.delete(details.txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...details,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to initialize Kafka service:", error);
+      throw error;
     }
   }
 
@@ -442,35 +461,8 @@ class IMPSKafkaService {
       if (!this.isConnected) {
         await this.initialize();
       }
-
-      // Save initial log
-      // if (contactNo && ifscCode && txnId) {
-      //   await saveLog({
-      //     transactionId: txnId,
-      //     data: {
-      //       mode: "UPI",
-      //       amount: details.amount,
-      //       status: "PENDING",
-      //       reasonOfFailure: "",
-      //       remitterAccount: {
-      //         accountNo: details.remitterDetails.accountNo,
-      //         ifscCode: details.remitterDetails.ifscCode,
-      //         contactNo: details.remitterDetails.contactNo,
-      //         mmid: details.remitterDetails.mmid,
-      //       },
-      //       beneficiaryAccount: {
-      //         accountNo: details.beneficiaryDetails.accountNo,
-      //         ifscCode: details.beneficiaryDetails.ifscCode,
-      //         contactNo: details.beneficiaryDetails.contactNo,
-      //         mmid: details.beneficiaryDetails.mmid,
-      //       },
-      //     },
-      //   });
-      // }
-
-      // Create promise that will be resolved when IMPS_TRANSFER_COMPLETE is received
+      
       const transferPromise = new Promise((resolve, reject) => {
-        // Set timeout
         const timeoutId = setTimeout(() => {
           if (this.pendingRequests.has(txnId)) {
             this.pendingRequests.delete(txnId);
@@ -505,7 +497,7 @@ class IMPSKafkaService {
         })
       );
 
-      console.log("IMPS transfer initiated, waiting for completion...");
+      console.log("Bank details verification, waiting for completion...");
 
       // Return the promise that will resolve when transfer completes
       return await transferPromise;
@@ -535,7 +527,7 @@ class IMPSKafkaService {
         return;
       }
 
-      const bankAccount = await getAccountByContactNo(
+      const bankAccount = await getAccountByContact(
         contactNo,
         ifscCode,
         requestedBy,

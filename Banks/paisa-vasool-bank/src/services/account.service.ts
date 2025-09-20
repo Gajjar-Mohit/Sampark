@@ -1,8 +1,5 @@
 import prisma from "../db";
 import { generateBankAccountNumber } from "../utils/account_number_genrator";
-import { generateCardNumber } from "../utils/card_number_generator";
-import { generateCardPin } from "../utils/card_ping_generator";
-import { generateCardValidityDate } from "../utils/card_validity_date_generator";
 import { CustomError } from "../utils/error_handler";
 import { generateMMID } from "../utils/mmid_generator";
 
@@ -56,6 +53,30 @@ export const getAccountByContactNo = async (
   const account = await prisma.bankAccount.findFirst({
     where: {
       accountNo: accountNo,
+      ifscCode: ifscCode,
+    },
+  });
+
+  if (!account) {
+    throw new CustomError("Contact is not registered", 400);
+  }
+
+  return {
+    ...account,
+    requestedBy,
+    txnId,
+  };
+};
+
+export const getAccountByContact = async (
+  contactNo: string,
+  ifscCode: string,
+  requestedBy: string,
+  txnId: string
+) => {
+  const account = await prisma.bankAccount.findFirst({
+    where: {
+      accountHolderContactNo: contactNo,
       ifscCode: ifscCode,
     },
   });

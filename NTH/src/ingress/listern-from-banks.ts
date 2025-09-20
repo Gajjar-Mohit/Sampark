@@ -1,6 +1,7 @@
 import { kafka } from "..";
 import { registeredBanks } from "../core/registered-banks";
 import { processIMPSTransfer } from "../core/manager/imps-state-manager";
+import { processUPITransfer } from "../core/manager/upi-state-manager";
 
 export async function listenForRequests() {
   try {
@@ -74,10 +75,16 @@ async function processIncomingMessage(
   key: string,
   value: string
 ) {
+  console.log(`Processing message from topic: ${topic}`);
   try {
     if (key.includes("imps-transfer")) {
       console.log("IMPS transfer details received");
       await processIMPSTransfer(topic, key, value);
+      return;
+    }
+    if (key.includes("upi")) {
+      console.log("UPI transfer details received");
+      await processUPITransfer(topic, key, value);
       return;
     }
   } catch (error) {

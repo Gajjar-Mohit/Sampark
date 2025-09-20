@@ -33,10 +33,12 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
     };
 
     const response = await axios.request(config);
-
+    console.log(response.data);
     if (!response.data.data) {
       throw new Error("Invalid response from PSP");
     }
+
+    const vpa = response.data.data.accountHolderContactNo + "@okpvb";
 
     const verified = await prisma.user.update({
       where: {
@@ -44,6 +46,11 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
       },
       data: {
         verified: true,
+        vpas: {
+          create: {
+            vpa,
+          },
+        },
       },
     });
     if (!verified) {
