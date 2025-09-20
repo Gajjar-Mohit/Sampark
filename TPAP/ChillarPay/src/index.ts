@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
-// import { errorHandler } from "./utils/error_handler";
-// import router from "./routes";
+import { errorHandler } from "./utils/error_handler";
+import router from "./routes";
 
 const app = express();
 
@@ -17,9 +17,9 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// app.use("/api/v1", router);
+app.use("/api/v1", router);
 
-// app.use(errorHandler);
+app.use(errorHandler);
 
 const startServer = async () => {
   try {

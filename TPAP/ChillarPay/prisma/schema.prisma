@@ -22,8 +22,10 @@ model User {
   id        String   @id @default(cuid())
   name      String
   phone     String   @unique
+  email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  verified  Boolean  @default(false)
   vpas      VPA[]
 }
 
@@ -48,6 +50,7 @@ model Transaction {
   fromVPAId String
   toVPAId   String
   amount    Float
+  userId    String
   type      TransactionType
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
