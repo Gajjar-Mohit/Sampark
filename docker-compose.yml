@@ -31,9 +31,15 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
-      KAFKA_LOG4J_LOGGERS: "kafka.coordinator.group.GroupMetadataManager=ERROR,state.change.logger=ERROR,kafka.log.LogCleaner=ERROR,kafka.controller=ERROR"
-      KAFKA_LOG4J_ROOT_LOGLEVEL: ERROR
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: ERROR
+      # Disable ALL Kafka logging
+      KAFKA_LOG4J_ROOT_LOGLEVEL: OFF
+      KAFKA_LOG4J_LOGGERS: "kafka=OFF,org.apache.kafka=OFF,kafka.coordinator.group.GroupMetadataManager=OFF,state.change.logger=OFF,kafka.log.LogCleaner=OFF,kafka.controller=OFF,kafka.server.KafkaApis=OFF,kafka.network.RequestChannel=OFF,kafka.cluster.Partition=OFF,kafka.log.Log=OFF,kafka.log.LogSegment=OFF,kafka.utils.Log4jController=OFF"
+      KAFKA_TOOLS_LOG4J_LOGLEVEL: OFF
+      # Additional JVM options to suppress logs
+      KAFKA_JVM_PERFORMANCE_OPTS: "-server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true -Dlog4j.configuration=file:/opt/confluent/etc/kafka/log4j.properties"
+      # Suppress specific Kafka internal logs
+      KAFKA_LOG_MESSAGE_FORMAT_VERSION: "2.8"
+      KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE: CreateTime
     networks:
       - kafka-network
     healthcheck:

@@ -168,3 +168,169 @@ export async function saveIntermidiateTXState(
     throw error;
   }
 }
+
+export async function saveUpiTranferDetails(transactionId: string, data: any) {
+  console.log(`Storing sender data for transaction: ${transactionId}`);
+
+  try {
+    // Get existing transaction state
+    const existingState = await redisClient.get(transactionId);
+
+    if (!existingState) {
+      console.log(
+        "Transaction state not found, creating new state with sender data"
+      );
+      // If no existing state, create new one with sender data only
+      const txState = {
+        transactionId: transactionId,
+        data: data,
+      };
+      await redisClient.set(transactionId, JSON.stringify(txState));
+      return txState;
+    }
+
+    // Parse existing state and add sender data
+    const txState = JSON.parse(existingState);
+    txState.senderBank = data;
+    // Save updated state to Redis
+    await redisClient.set(transactionId, JSON.stringify(txState));
+    console.log("Sender data added to existing transaction");
+
+    return txState;
+  } catch (error) {
+    console.error("Error saving sender data:", error);
+    throw error;
+  }
+}
+
+export async function saveUPITransactionSenderDetails(transactionId: string, data: any) {
+  console.log(`Storing UPI transaction sender details for transaction: ${transactionId}`);
+
+  try {
+    // Get existing transaction state
+    const existingState = await redisClient.get(transactionId);
+
+    if (!existingState) {
+      console.log(
+        "Transaction state not found, creating new state with sender data"
+      );
+      // If no existing state, create new one with sender data only
+      const txState = {
+        transactionId: transactionId,
+        senderBank: data,
+      };
+      await redisClient.set(transactionId, JSON.stringify(txState));
+      return txState;
+    }
+
+    // Parse existing state and add sender data
+    const txState = JSON.parse(existingState);
+    txState.senderBank = data;
+    // Save updated state to Redis
+    await redisClient.set(transactionId, JSON.stringify(txState));
+    console.log("Sender data added to existing transaction");
+
+    return txState;
+  } catch (error) {
+    console.error("Error saving sender data:", error);
+    throw error;
+  }
+}
+export async function saveUPITransactionBeneficiaryDetails(transactionId: string, data: any) {
+  console.log(`Storing UPI transaction beneficiary details for transaction: ${transactionId}`);
+
+  try {
+    // Get existing transaction state
+    const existingState = await redisClient.get(transactionId);
+
+    if (!existingState) {
+      console.log(
+        "Transaction state not found, creating new state with beneficiary data"
+      );
+      // If no existing state, create new one with beneficiary data only
+      const txState = {
+        transactionId: transactionId,
+        beneficiaryBank: data,
+      };
+      await redisClient.set(transactionId, JSON.stringify(txState));
+      return txState;
+    }
+
+    // Parse existing state and add beneficiary data
+    const txState = JSON.parse(existingState);
+    txState.beneficiaryBank = data;
+    // Save updated state to Redis
+    await redisClient.set(transactionId, JSON.stringify(txState));
+    console.log("Beneficiary data added to existing transaction");
+
+    return txState;
+  } catch (error) {
+    console.error("Error saving beneficiary data:", error);
+    throw error;
+  }
+}
+
+export async function saveUPITransactionIntermidiateSteps(
+  transactionId: string,
+  data: any
+) {
+  console.log(
+    `Storing UPI transaction intermediate steps for transaction: ${transactionId}`
+  );
+  try {
+    // Get existing transaction state
+    const existingState = await redisClient.get(transactionId);
+    let txState: any;
+    if (existingState) {
+      txState = JSON.parse(existingState);
+      // Initialize processingHistory if it doesn't exist
+      if (!txState.processingHistory) {
+        txState.processingHistory = [];
+      }
+      txState.processingHistory.push({
+        step: data.step,
+        timestamp: new Date().toISOString(),
+        processor: data.processor,
+      });
+    } else {
+      txState = {
+        transactionId: transactionId,
+        processingHistory: [
+          {
+            step: data.step,
+            timestamp: new Date().toISOString(),
+            processor: data.processor,
+          },
+        ],
+      };
+    }
+    if (data.step === "CREDIT_BENEFICIARY_COMPLETE") {
+      const finalState = {
+        transactionId: transactionId,
+        processingHistory: txState.processingHistory,
+        remitterBank: {
+          accountNo: txState.remitterBank.accountNo,
+          ifscCode: txState.remitterBank.ifscCode,
+          contactNo: txState.remitterBank.contactNo,
+          mmid: txState.remitterBank.mmid,
+        },
+        beneficiaryBank: {
+          accountNo: txState.beneficiaryBank.accountNo,
+          ifscCode: txState.beneficiaryBank.ifscCode,
+          contactNo: txState.beneficiaryBank.contactNo,
+          mmid: txState.beneficiaryBank.mmid,
+        },
+        amount: txState.amount,
+      };
+      console.log("Saving intermediate transaction state " + finalState);
+      await redisClient.set(transactionId, JSON.stringify(finalState));
+    } else {
+      await redisClient.set(transactionId, JSON.stringify(txState));
+    }
+    console.log("Intermediate transaction state saved successfully");
+    return txState;
+  } catch (error: any) {
+    console.error("Error saving intermediate transaction state:", error);
+    throw error;
+  }
+}

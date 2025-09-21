@@ -6,7 +6,7 @@ import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
 import { MessageType } from "../types/nth";
-import { createVpaAndLinkAccount } from "./upi.service";
+import { createVpaAndLinkAccount, verifyVpaService } from "./upi.service";
 
 const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
@@ -117,10 +117,125 @@ class IMPSKafkaService {
       case MessageType.BANK_DETAILS_ADDED:
         await this.handleBankDetailsAdded(value);
         break;
+      case MessageType.VERIFY_TO_VPA:
+        await this.handleVerifyToVpa(value);
+        break;
+      case MessageType.VERIFY_FROM_VPA:
+        await this.handleVerifyFromVpa(value);
+        break;
 
+      // case MessageType.VERIFY_VPA_COMPLETE:
+      //   await this.handleVerifyVpaComplete(value);
+      //   break;
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
+    }
+  }
+  async initPushTransaction(
+    toVpa: string,
+    fromVpa: string,
+    amount: number,
+    txnId: string
+  ) {
+    try {
+      if (!this.isConnected) {
+        await this.initialize();
+      }
+
+      const transferPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (this.pendingRequests.has(txnId)) {
+            this.pendingRequests.delete(txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingRequests.set(txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      await this.sendToNth(
+        MessageType.INIT_PUSH_TRANSACTION,
+        JSON.stringify({
+          txnId,
+          toVpa,
+          fromVpa,
+          amount,
+          requestedBy: RECEIVE_TOPIC,
+        })
+      );
+
+      console.log("Bank details verification, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
+    } catch (error) {
+      console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (txnId && this.pendingRequests.has(txnId)) {
+        this.pendingRequests.delete(txnId);
+      }
+
+      throw error;
+    }
+  }
+
+  private async handleVerifyToVpa(value: string): Promise<void> {
+    console.log("Handling verify TO vpa", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling verify vpa", details);
+      const vpaResult = await verifyVpaService(details.toVpa, details.txnId);
+
+      if (!vpaResult.success) {
+        console.error("Error verifying vpa:", vpaResult);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.VERIFY_TO_VPA_COMPLETE,
+        JSON.stringify({ ...vpaResult.data, txnId: details.txnId })
+      );
+    } catch (error) {
+      console.error("Error handling verify vpa:", error);
+      await this.sendNotFoundResponse();
+    }
+  }
+  
+  private async handleVerifyFromVpa(value: string): Promise<void> {
+    console.log("Handling verify FROM vpa", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling verify vpa", details);
+      const vpaResult = await verifyVpaService(details.fromVpa, details.txnId);
+
+      if (!vpaResult.success) {
+        console.error("Error verifying vpa:", vpaResult);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.VERIFY_FROM_VPA_COMPLETE,
+        JSON.stringify({ ...vpaResult.data, txnId: details.txnId })
+      );
+    } catch (error) {
+      console.error("Error handling verify vpa:", error);
+      await this.sendNotFoundResponse();
     }
   }
 
@@ -581,6 +696,8 @@ class IMPSKafkaService {
   }
 }
 
+
+
 let impsKafkaService: IMPSKafkaService;
 
 function getIMPSKafkaService(): IMPSKafkaService {
@@ -601,5 +718,14 @@ export const linkBankDetails = (
   ifscCode: string,
   txnId: string
 ) => getIMPSKafkaService().initAddBank(contactNo, ifscCode, txnId);
+
+
+export const pushTransaction = (
+  toVpa: string,
+  fromVpa: string,
+  amount: number,
+  txnId: string
+) => getIMPSKafkaService().initPushTransaction(toVpa, fromVpa, amount, txnId);
+
 
 export default getIMPSKafkaService;

@@ -14,4 +14,9 @@ export enum MessageType {
   //UPI Transfer
   ADD_BANK_DETAILS = "upi-add-bank-details",
   BANK_DETAILS_ADDED = "upi-bank-details-added",
+  VERIFY_TO_VPA = "upi-verify-to-vpa",
+  VERIFY_TO_VPA_COMPLETE = "upi-verify-to-vpa-complete",
+  VERIFY_FROM_VPA = "upi-verify-from-vpa",
+  VERIFY_FROM_VPA_COMPLETE = "upi-verify-from-vpa-complete",
+  INIT_PUSH_TRANSACTION = "upi-init-push-transaction",
 }

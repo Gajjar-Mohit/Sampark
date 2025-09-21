@@ -23,3 +23,29 @@ export const createVpaAndLinkAccount = async (details: any) => {
     vpa,
   };
 };
+
+export const verifyVpaService = async (vpa: string, txnId: string) => {
+  const vpaDetails = await prisma.vpaToAccountMapping.findFirst({
+    where: {
+      vpa,
+    },
+  });
+
+  if (!vpaDetails) {
+    return {
+      success: false,
+      error: "VPA not found",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      accountNo: vpaDetails.accountNumber,
+      ifscCode: vpaDetails.ifscCode,
+      contactNo: vpaDetails.contactNo,
+      name: vpaDetails.name,
+      vpa,
+    },
+  };
+};
