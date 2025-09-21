@@ -6,7 +6,6 @@ import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
 import { MessageType } from "../types/nth";
-import { request } from "express";
 
 const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
