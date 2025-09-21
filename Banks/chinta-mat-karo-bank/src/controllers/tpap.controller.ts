@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { CheckBankDetailsRequest } from "../types/upi";
-import { verifyBankDetails } from "../services/nth.service";
+import { linkBankDetails } from "../services/nth.service";
 import { generateTransactionId } from "../utils/transaction_id_generator";
 
 export const getBankDetailsController = async (req: Request, res: Response) => {
@@ -14,7 +14,7 @@ export const getBankDetailsController = async (req: Request, res: Response) => {
 
   const txnId = generateTransactionId();
 
-  const response = await verifyBankDetails(
+  const response = await linkBankDetails(
     parsedBody.data.contactNo,
     parsedBody.data.ifscCode,
     txnId

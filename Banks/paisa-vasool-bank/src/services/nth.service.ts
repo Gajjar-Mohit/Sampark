@@ -6,6 +6,7 @@ import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
 import { MessageType } from "../types/nth";
+import { createVpaAndLinkAccount } from "./upi.service";
 
 const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
@@ -261,10 +262,10 @@ class IMPSKafkaService {
       if (details.txnId && this.pendingRequests.has(details.txnId)) {
         const pendingRequest = this.pendingRequests.get(details.txnId)!;
         this.pendingRequests.delete(details.txnId);
-
+        const res = await createVpaAndLinkAccount(details);
         // Resolve the promise with the complete transfer details
         pendingRequest.resolve({
-          ...details,
+          ...res,
         });
       }
     } catch (error) {
@@ -460,7 +461,7 @@ class IMPSKafkaService {
       if (!this.isConnected) {
         await this.initialize();
       }
-      
+
       const transferPromise = new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           if (this.pendingRequests.has(txnId)) {
@@ -595,7 +596,7 @@ export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
 export const initiateIMPSTransfer = (details: TransferDetails): Promise<any> =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
 
-export const verifyBankDetails = (
+export const linkBankDetails = (
   contactNo: string,
   ifscCode: string,
   txnId: string

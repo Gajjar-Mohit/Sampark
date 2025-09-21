@@ -38,7 +38,7 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
       throw new Error("Invalid response from PSP");
     }
 
-    const vpa = response.data.data.accountHolderContactNo + "@cmk";
+    const vpa = response.data.data.vpa;
 
     const verified = await prisma.user.update({
       where: {
@@ -61,3 +61,4 @@ export const addAccount = async (contactNo: string, ifscCode: string) => {
     return error;
   }
 };
+

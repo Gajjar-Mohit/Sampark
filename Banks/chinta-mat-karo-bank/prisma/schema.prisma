@@ -42,7 +42,7 @@ model BankAccount {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  Card        Card[]
+  Card         Card[]
   Transactions Transaction[]
 }
 
@@ -78,4 +78,15 @@ model Transaction {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   mode          String
+}
+
+model VpaToAccountMapping {
+  id            String   @id @default(uuid())
+  vpa           String
+  accountNumber String
+  ifscCode      String
+  contactNo     String
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
