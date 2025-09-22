@@ -1,28 +1,33 @@
 import { Kafka } from "kafkajs";
 import { listenForRequests } from "./ingress/listern-from-banks";
 import { createClient } from "redis";
+import client from "prom-client";
+import express from "express";
+import cors from "cors";
+
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 if (!process.env.KAFKA_BASEURL) {
   throw new Error("KAFKA_BASEURL is not set");
 }
 
-export const kafka = new Kafka({
-  clientId: "nth-switch",
-  brokers: [process.env.KAFKA_BASEURL],
-});
-
 const config = {
   kafka: {
     clientId: "nth-switch",
-    brokers: [process.env.KAFKA_BASEURL || ""],
+    brokers: [process.env.KAFKA_BASEURL],
   },
   redis: {
     host: process.env.REDIS_HOST || "127.0.0.1",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
     password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB || "0"),
+    database: parseInt(process.env.REDIS_DB || "0", 10),
   },
 };
+
+export const kafka = new Kafka({
+  clientId: config.kafka.clientId,
+  brokers: config.kafka.brokers,
+});
 
 async function createRedisClient() {
   const client = createClient({
@@ -31,9 +36,9 @@ async function createRedisClient() {
       port: config.redis.port,
     },
     password: config.redis.password,
-    database: config.redis.db,
+    database: config.redis.database,
   });
-  await client.connect();
+
   client.on("error", (err) => {
     console.error("Redis Client Error:", err);
   });
@@ -46,8 +51,42 @@ async function createRedisClient() {
     console.log("Redis client disconnected");
   });
 
+  await client.connect();
   return client;
 }
+
 export const redisClient = await createRedisClient();
 
-listenForRequests();
+const app = express();
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ register: client.register });
+
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.send(await client.register.metrics());
+});
+
+async function startServer() {
+  try {
+    listenForRequests();
+
+    app.listen(PORT, () => {
+      console.log(`HTTP Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();

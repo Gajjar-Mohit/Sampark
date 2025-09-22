@@ -14,5 +14,6 @@ FROM base AS runner
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 
-# RUN bun run seed
+# Expose port
+EXPOSE 3000
 

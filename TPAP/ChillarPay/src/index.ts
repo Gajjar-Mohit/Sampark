@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { errorHandler } from "./utils/error_handler";
 import router from "./routes";
+import client from "prom-client";
 
 const app = express();
 
@@ -16,6 +17,14 @@ app.use(cors());
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+const collectDefaultMetrics = client.collectDefaultMetrics;
+
+collectDefaultMetrics({ register: client.register });
+
+app.use("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.send(await client.register.metrics());
+});
 
 app.use("/api/v1", router);
 
