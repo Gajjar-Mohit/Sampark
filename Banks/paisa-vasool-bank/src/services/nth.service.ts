@@ -123,15 +123,82 @@ class IMPSKafkaService {
       case MessageType.VERIFY_FROM_VPA:
         await this.handleVerifyFromVpa(value);
         break;
-
-      // case MessageType.VERIFY_VPA_COMPLETE:
-      //   await this.handleVerifyVpaComplete(value);
-      //   break;
+      case MessageType.UPI_DEBIT_REMITTER:
+        await this.handleUpiDebitRemitter(value);
+        break;
+      case MessageType.UPI_CREDIT_BENEFICIARY:
+        await this.handleUpiCreditBeneficiary(value);
+        break;
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
     }
   }
+
+  private async handleUpiDebitRemitter(value: string): Promise<void> {
+    console.log("Handling UPI debit remitter", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI debit remitter", details);
+      const accountNo = details.senderBank.accountNo;
+      const ifscCode = details.senderBank.ifscCode;
+      const contactNo = details.senderBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      const [debitResult, txSaved] = await Promise.all([
+        debitBankAccount(accountNo, ifscCode, contactNo, amount),
+        storeTransaction(txnId, amount, "DEBIT", accountNo, `UPI/${contactNo}`),
+      ]);
+
+      console.log("Transaction saved:", txSaved);
+
+      if (!debitResult.success) {
+        console.error("Error debiting bank account:", debitResult);
+        return;
+      }
+
+      await this.sendToNth(MessageType.UPI_DEBIT_REMITTER_SUCCESS, value);
+    } catch (error) {
+      console.error("Error handling UPI debit remitter:", error);
+    }
+  }
+
+  private async handleUpiCreditBeneficiary(value: string): Promise<void> {
+    console.log("Handling UPI credit beneficiary", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI credit beneficiary", details);
+      const accountNo = details.beneficiaryBank.accountNo;
+      const ifscCode = details.beneficiaryBank.ifscCode;
+      const contactNo = details.beneficiaryBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      const [creditResult, txSaved] = await Promise.all([
+        creditBankAccount(accountNo, ifscCode, contactNo, amount),
+        storeTransaction(
+          txnId,
+          amount,
+          "CREDIT",
+          accountNo,
+          `UPI/${contactNo}`
+        ),
+      ]);
+
+      console.log("Transaction saved:", txSaved);
+
+      if (!creditResult.success) {
+        console.error("Error crediting bank account:", creditResult);
+        return;
+      }
+
+      await this.sendToNth(MessageType.UPI_CREDIT_BENEFICIARY_SUCCESS, value);
+    } catch (error) {
+      console.error("Error handling UPI credit beneficiary:", error);
+    }
+  }
+
   async initPushTransaction(
     toVpa: string,
     fromVpa: string,
@@ -216,7 +283,7 @@ class IMPSKafkaService {
       await this.sendNotFoundResponse();
     }
   }
-  
+
   private async handleVerifyFromVpa(value: string): Promise<void> {
     console.log("Handling verify FROM vpa", value);
     try {
@@ -696,8 +763,6 @@ class IMPSKafkaService {
   }
 }
 
-
-
 let impsKafkaService: IMPSKafkaService;
 
 function getIMPSKafkaService(): IMPSKafkaService {
@@ -719,13 +784,11 @@ export const linkBankDetails = (
   txnId: string
 ) => getIMPSKafkaService().initAddBank(contactNo, ifscCode, txnId);
 
-
 export const pushTransaction = (
   toVpa: string,
   fromVpa: string,
   amount: number,
   txnId: string
 ) => getIMPSKafkaService().initPushTransaction(toVpa, fromVpa, amount, txnId);
-
 
 export default getIMPSKafkaService;

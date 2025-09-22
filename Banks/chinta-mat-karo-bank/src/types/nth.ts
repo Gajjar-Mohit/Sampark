@@ -19,4 +19,8 @@ export enum MessageType {
   VERIFY_FROM_VPA = "upi-verify-from-vpa",
   VERIFY_FROM_VPA_COMPLETE = "upi-verify-from-vpa-complete",
   INIT_PUSH_TRANSACTION = "upi-init-push-transaction",
+  UPI_DEBIT_REMITTER = "upi-debit-remitter",
+  UPI_CREDIT_BENEFICIARY = "upi-credit-beneficiary",
+  UPI_DEBIT_REMITTER_SUCCESS = "upi-debit-remitter-success",
+  UPI_CREDIT_BENEFICIARY_SUCCESS = "upi-credit-beneficiary-success",
 }

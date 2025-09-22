@@ -121,5 +121,63 @@ export async function processUPITransfer(
     console.log("Verify from VPA complete for transaction: " + data);
     console.log(data);
     await saveUPITransactionSenderDetails(data.txnId, data);
+
+    const key1 = "upi-debit-remitter";
+
+    const recipient = registeredBanks.find(
+      (bank) => bank.ifscCodePrefix === data.ifscCode.substring(0, 3)
+    );
+
+    if (!recipient) {
+      const key = "upi-error";
+      const value = "Recipient bank not found";
+      await forwardToBank(topic, key, value);
+      return;
+    }
+    const state = await getTXState(data.txnId);
+    console.log("Saving beneficiary data: " + JSON.stringify(state));
+    if (!state) {
+      console.log("State not found");
+      return;
+    }
+
+    const value1 = JSON.stringify({
+      senderBank: state.senderBank,
+      beneficiaryBank: state.beneficiaryBank,
+      txnId: data.txnId,
+      amount: state.data.amount,
+    });
+    await forwardToBank(recipient.nthToBank, key1, value1);
+  } else if (key === "upi-debit-remitter-success") {
+    console.log("Remitter Debited");
+    const state = await getTXState(data.txnId);
+    if (!state) {
+      console.log("State not found");
+      return;
+    }
+    const beneficiaryBank = registeredBanks.find(
+      (bank) =>
+        bank.ifscCodePrefix === state.beneficiaryBank.ifscCode.substring(0, 3)
+    );
+
+    if (!beneficiaryBank) {
+      const key = "upi-error";
+      const value = "Beneficiary bank not found";
+      await forwardToBank(topic, key, value);
+      return;
+    }
+
+    const key1 = "upi-credit-beneficiary";
+    const value1 = JSON.stringify({
+      senderBank: state.senderBank,
+      beneficiaryBank: state.beneficiaryBank,
+      txnId: data.txnId,
+      amount: state.data.amount,
+    });
+    await forwardToBank(beneficiaryBank.nthToBank, key1, value1);
+    return;
+  } else if (key === "upi-credit-beneficiary-success") {
+    console.log("Beneficiary Credited");
+    console.log("Transaction is complete");
   }
 }
