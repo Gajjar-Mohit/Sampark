@@ -71,9 +71,9 @@ services:
       driver: "none"
     restart: unless-stopped
 
-  prom-server:
+  prometheus-server:
     image: prom/prometheus
-    container_name: prom-server
+    container_name: prometheus-server
     depends_on:
       - grafana
     ports:
