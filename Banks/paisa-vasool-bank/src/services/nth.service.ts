@@ -23,7 +23,8 @@ class IMPSKafkaService {
   private consumer = kafka.consumer({ groupId: GROUP_ID });
   private producer = kafka.producer();
   private isConnected = false;
-  private pendingRequests = new Map<string, PendingRequest>();
+  private pendingIMPSRequests = new Map<string, PendingRequest>();
+  private pendingUPIRequests = new Map<string, PendingRequest>();
   private readonly TIMEOUT_MS = 30000;
   private cleanupInterval: NodeJS.Timeout | null = null;
 
@@ -54,9 +55,20 @@ class IMPSKafkaService {
     // Clean up expired requests
     this.cleanupInterval = setInterval(() => {
       const now = Date.now();
-      for (const [txnId, request] of this.pendingRequests.entries()) {
+      for (const [txnId, request] of this.pendingIMPSRequests.entries()) {
         if (now - request.timestamp > this.TIMEOUT_MS) {
-          this.pendingRequests.delete(txnId);
+          this.pendingIMPSRequests.delete(txnId);
+          request.reject(new Error("Request timeout"));
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    // Clean up expired UPI requests
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [txnId, request] of this.pendingUPIRequests.entries()) {
+        if (now - request.timestamp > this.TIMEOUT_MS) {
+          this.pendingUPIRequests.delete(txnId);
           request.reject(new Error("Request timeout"));
         }
       }
@@ -129,11 +141,103 @@ class IMPSKafkaService {
       case MessageType.UPI_CREDIT_BENEFICIARY:
         await this.handleUpiCreditBeneficiary(value);
         break;
+      case MessageType.UPI_TRANSACTION_COMPLETE:
+        await this.handleUpiTransactionComplete(value);
+        break;
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
     }
   }
+
+  private async handleUpiTransactionComplete(value: string): Promise<void> {
+    console.log("Handling UPI transaction complete", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI transaction complete", details);
+      const accountNo = details.beneficiaryBank.accountNo;
+      const ifscCode = details.beneficiaryBank.ifscCode;
+      const contactNo = details.beneficiaryBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      await saveLog({
+        transactionId: txnId,
+        data: {
+          mode: "UPI",
+          amount,
+          status: "COMPLETE",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+          beneficiaryAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+        },
+      });
+
+      // Check if there's a pending request for this transaction
+      if (txnId && this.pendingUPIRequests.has(txnId)) {
+        const pendingRequest = this.pendingUPIRequests.get(txnId)!;
+        this.pendingUPIRequests.delete(txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...details,
+          status: "COMPLETE",
+        });
+      }
+    } catch (error) {
+      console.error("Error handling UPI transaction complete:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingUPIRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingUPIRequests.get(details.txnId)!;
+          this.pendingUPIRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
+    }
+  }
+
+  //   {
+  //     "transactionId": "TXN032509211252467",
+  //     "data": {
+  //         "type": "UPI",
+  //         "txnId": "TXN032509211252467",
+  //         "toVpa": "2342344562@pvb",
+  //         "fromVpa": "2342344562@cmk",
+  //         "amount": 19,
+  //         "requestedBy": "NTH-to-456123"
+  //     },
+  //     "beneficiaryBank": {
+  //         "accountNo": "348861268832",
+  //         "ifscCode": "PVB42245114",
+  //         "contactNo": "2342344562",
+  //         "name": "Mohit Gajjar",
+  //         "vpa": "2342344562@pvb",
+  //         "txnId": "TXN032509211252467"
+  //     },
+  //     "senderBank": {
+  //         "accountNo": "348861268832",
+  //         "ifscCode": "PVB42245114",
+  //         "contactNo": "2342344562",
+  //         "name": "Mohit Gajjar",
+  //         "vpa": "2342344562@cmk",
+  //         "txnId": "TXN032509211252467"
+  //     }
+  // }
 
   private async handleUpiDebitRemitter(value: string): Promise<void> {
     console.log("Handling UPI debit remitter", value);
@@ -199,76 +303,13 @@ class IMPSKafkaService {
     }
   }
 
-  async initPushTransaction(
-    toVpa: string,
-    fromVpa: string,
-    amount: number,
-    txnId: string
-  ) {
-    try {
-      if (!this.isConnected) {
-        await this.initialize();
-      }
-
-      const transferPromise = new Promise((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          if (this.pendingRequests.has(txnId)) {
-            this.pendingRequests.delete(txnId);
-            reject(
-              new Error(
-                "IMPS transfer timeout - no completion response received"
-              )
-            );
-          }
-        }, this.TIMEOUT_MS);
-
-        this.pendingRequests.set(txnId, {
-          resolve: (value) => {
-            clearTimeout(timeoutId);
-            resolve(value);
-          },
-          reject: (reason) => {
-            clearTimeout(timeoutId);
-            reject(reason);
-          },
-          timestamp: Date.now(),
-        });
-      });
-
-      await this.sendToNth(
-        MessageType.INIT_PUSH_TRANSACTION,
-        JSON.stringify({
-          txnId,
-          toVpa,
-          fromVpa,
-          amount,
-          requestedBy: RECEIVE_TOPIC,
-        })
-      );
-
-      console.log("Bank details verification, waiting for completion...");
-
-      // Return the promise that will resolve when transfer completes
-      return await transferPromise;
-    } catch (error) {
-      console.error("Error initiating IMPS transfer:", error);
-
-      // Clean up pending request if it exists
-      if (txnId && this.pendingRequests.has(txnId)) {
-        this.pendingRequests.delete(txnId);
-      }
-
-      throw error;
-    }
-  }
-
   private async handleVerifyToVpa(value: string): Promise<void> {
     console.log("Handling verify TO vpa", value);
     try {
       const details = JSON.parse(value);
       console.log("Handling verify vpa", details);
       const vpaResult = await verifyVpaService(details.toVpa, details.txnId);
-
+      
       if (!vpaResult.success) {
         console.error("Error verifying vpa:", vpaResult);
         return;
@@ -333,9 +374,9 @@ class IMPSKafkaService {
       });
 
       // Check if there's a pending request for this transaction
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        const pendingRequest = this.pendingRequests.get(details.txnId)!;
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
 
         // Resolve the promise with the complete transfer details
         pendingRequest.reject(new Error(details.reasonOfFailure));
@@ -346,9 +387,9 @@ class IMPSKafkaService {
       // If parsing failed but we can extract txnId, reject the pending request
       try {
         const details = JSON.parse(value);
-        if (details.txnId && this.pendingRequests.has(details.txnId)) {
-          const pendingRequest = this.pendingRequests.get(details.txnId)!;
-          this.pendingRequests.delete(details.txnId);
+        if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+          this.pendingIMPSRequests.delete(details.txnId);
           pendingRequest.reject(error);
         }
       } catch (parseError) {
@@ -385,9 +426,9 @@ class IMPSKafkaService {
       });
 
       // Check if there's a pending request for this transaction
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        const pendingRequest = this.pendingRequests.get(details.txnId)!;
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
 
         // Resolve the promise with the complete transfer details
         pendingRequest.resolve({
@@ -401,9 +442,9 @@ class IMPSKafkaService {
       // If parsing failed but we can extract txnId, reject the pending request
       try {
         const details = JSON.parse(value);
-        if (details.txnId && this.pendingRequests.has(details.txnId)) {
-          const pendingRequest = this.pendingRequests.get(details.txnId)!;
-          this.pendingRequests.delete(details.txnId);
+        if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+          this.pendingIMPSRequests.delete(details.txnId);
           pendingRequest.reject(error);
         }
       } catch (parseError) {
@@ -441,9 +482,9 @@ class IMPSKafkaService {
     try {
       const details = JSON.parse(value);
       // Check if there's a pending request for this transaction
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        const pendingRequest = this.pendingRequests.get(details.txnId)!;
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
         const res = await createVpaAndLinkAccount(details);
         // Resolve the promise with the complete transfer details
         pendingRequest.resolve({
@@ -596,8 +637,8 @@ class IMPSKafkaService {
       const transferPromise = new Promise((resolve, reject) => {
         // Set timeout
         const timeoutId = setTimeout(() => {
-          if (this.pendingRequests.has(details.txnId)) {
-            this.pendingRequests.delete(details.txnId);
+          if (this.pendingIMPSRequests.has(details.txnId)) {
+            this.pendingIMPSRequests.delete(details.txnId);
             reject(
               new Error(
                 "IMPS transfer timeout - no completion response received"
@@ -606,7 +647,7 @@ class IMPSKafkaService {
           }
         }, this.TIMEOUT_MS);
 
-        this.pendingRequests.set(details.txnId, {
+        this.pendingIMPSRequests.set(details.txnId, {
           resolve: (value) => {
             clearTimeout(timeoutId);
             resolve(value);
@@ -630,8 +671,8 @@ class IMPSKafkaService {
       console.error("Error initiating IMPS transfer:", error);
 
       // Clean up pending request if it exists
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        this.pendingIMPSRequests.delete(details.txnId);
       }
 
       throw error;
@@ -646,8 +687,8 @@ class IMPSKafkaService {
 
       const transferPromise = new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
-          if (this.pendingRequests.has(txnId)) {
-            this.pendingRequests.delete(txnId);
+          if (this.pendingIMPSRequests.has(txnId)) {
+            this.pendingIMPSRequests.delete(txnId);
             reject(
               new Error(
                 "IMPS transfer timeout - no completion response received"
@@ -656,7 +697,7 @@ class IMPSKafkaService {
           }
         }, this.TIMEOUT_MS);
 
-        this.pendingRequests.set(txnId, {
+        this.pendingIMPSRequests.set(txnId, {
           resolve: (value) => {
             clearTimeout(timeoutId);
             resolve(value);
@@ -687,8 +728,71 @@ class IMPSKafkaService {
       console.error("Error initiating IMPS transfer:", error);
 
       // Clean up pending request if it exists
-      if (txnId && this.pendingRequests.has(txnId)) {
-        this.pendingRequests.delete(txnId);
+      if (txnId && this.pendingIMPSRequests.has(txnId)) {
+        this.pendingIMPSRequests.delete(txnId);
+      }
+
+      throw error;
+    }
+  }
+
+  async initPushTransaction(
+    toVpa: string,
+    fromVpa: string,
+    amount: number,
+    txnId: string
+  ) {
+    try {
+      if (!this.isConnected) {
+        await this.initialize();
+      }
+
+      const transferPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (this.pendingUPIRequests.has(txnId)) {
+            this.pendingUPIRequests.delete(txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingUPIRequests.set(txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      await this.sendToNth(
+        MessageType.INIT_PUSH_TRANSACTION,
+        JSON.stringify({
+          txnId,
+          toVpa,
+          fromVpa,
+          amount,
+          requestedBy: RECEIVE_TOPIC,
+        })
+      );
+
+      console.log("Bank details verification, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
+    } catch (error) {
+      console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (txnId && this.pendingIMPSRequests.has(txnId)) {
+        this.pendingIMPSRequests.delete(txnId);
       }
 
       throw error;
@@ -746,10 +850,10 @@ class IMPSKafkaService {
       }
 
       // Reject all pending requests
-      for (const [txnId, request] of this.pendingRequests.entries()) {
+      for (const [txnId, request] of this.pendingIMPSRequests.entries()) {
         request.reject(new Error("Service disconnected"));
       }
-      this.pendingRequests.clear();
+      this.pendingIMPSRequests.clear();
 
       await Promise.all([
         this.consumer.disconnect(),

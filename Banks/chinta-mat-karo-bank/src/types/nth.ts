@@ -23,4 +23,5 @@ export enum MessageType {
   UPI_CREDIT_BENEFICIARY = "upi-credit-beneficiary",
   UPI_DEBIT_REMITTER_SUCCESS = "upi-debit-remitter-success",
   UPI_CREDIT_BENEFICIARY_SUCCESS = "upi-credit-beneficiary-success",
+  UPI_TRANSACTION_COMPLETE = "upi-transaction-complete",
 }
