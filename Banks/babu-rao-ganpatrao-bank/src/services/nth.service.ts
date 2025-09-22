@@ -1,14 +1,12 @@
 import { de } from "zod/locales";
 import { kafka } from "..";
-import {
-  MessageType,
-  type VerifyDetailsRequest,
-  type TransferDetails,
-} from "../types/imps";
-import { getAccountByContactNo } from "./account.service";
+import { type VerifyDetailsRequest, type TransferDetails } from "../types/imps";
+import { getAccountByContact, getAccountByContactNo } from "./account.service";
 import { creditBankAccount, debitBankAccount } from "./imps.service";
 import { saveLog } from "./logging.service";
 import { storeTransaction } from "./transaction.service";
+import { MessageType } from "../types/nth";
+import { createVpaAndLinkAccount, verifyVpaService } from "./upi.service";
 
 const IIN = process.env.IIN;
 const GROUP_ID = `NTH-to${IIN}-group`;
@@ -25,7 +23,8 @@ class IMPSKafkaService {
   private consumer = kafka.consumer({ groupId: GROUP_ID });
   private producer = kafka.producer();
   private isConnected = false;
-  private pendingRequests = new Map<string, PendingRequest>();
+  private pendingIMPSRequests = new Map<string, PendingRequest>();
+  private pendingUPIRequests = new Map<string, PendingRequest>();
   private readonly TIMEOUT_MS = 30000;
   private cleanupInterval: NodeJS.Timeout | null = null;
 
@@ -56,9 +55,20 @@ class IMPSKafkaService {
     // Clean up expired requests
     this.cleanupInterval = setInterval(() => {
       const now = Date.now();
-      for (const [txnId, request] of this.pendingRequests.entries()) {
+      for (const [txnId, request] of this.pendingIMPSRequests.entries()) {
         if (now - request.timestamp > this.TIMEOUT_MS) {
-          this.pendingRequests.delete(txnId);
+          this.pendingIMPSRequests.delete(txnId);
+          request.reject(new Error("Request timeout"));
+        }
+      }
+    }, 5000); // Check every 5 seconds
+
+    // Clean up expired UPI requests
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [txnId, request] of this.pendingUPIRequests.entries()) {
+        if (now - request.timestamp > this.TIMEOUT_MS) {
+          this.pendingUPIRequests.delete(txnId);
           request.reject(new Error("Request timeout"));
         }
       }
@@ -95,6 +105,7 @@ class IMPSKafkaService {
     console.log(`Processing message - Key: ${key}`);
 
     switch (key) {
+      //IMPS Transfer
       case MessageType.VERIFY_DETAILS:
         await this.handleVerifyDetails(value);
         break;
@@ -111,9 +122,228 @@ class IMPSKafkaService {
         await this.handleIMPSTranferError(value);
         break;
 
+      //UPI Transfer
+      case MessageType.ADD_BANK_DETAILS:
+        await this.addBank(value);
+        break;
+      case MessageType.BANK_DETAILS_ADDED:
+        await this.handleBankDetailsAdded(value);
+        break;
+      case MessageType.VERIFY_TO_VPA:
+        await this.handleVerifyToVpa(value);
+        break;
+      case MessageType.VERIFY_FROM_VPA:
+        await this.handleVerifyFromVpa(value);
+        break;
+      case MessageType.UPI_DEBIT_REMITTER:
+        await this.handleUpiDebitRemitter(value);
+        break;
+      case MessageType.UPI_CREDIT_BENEFICIARY:
+        await this.handleUpiCreditBeneficiary(value);
+        break;
+      case MessageType.UPI_TRANSACTION_COMPLETE:
+        await this.handleUpiTransactionComplete(value);
+        break;
       default:
         console.warn(`Unknown message type: ${key}`);
         await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleUpiTransactionComplete(value: string): Promise<void> {
+    console.log("Handling UPI transaction complete", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI transaction complete", details);
+      const accountNo = details.beneficiaryBank.accountNo;
+      const ifscCode = details.beneficiaryBank.ifscCode;
+      const contactNo = details.beneficiaryBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      await saveLog({
+        transactionId: txnId,
+        data: {
+          mode: "UPI",
+          amount,
+          status: "COMPLETE",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+          beneficiaryAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+        },
+      });
+
+      // Check if there's a pending request for this transaction
+      if (txnId && this.pendingUPIRequests.has(txnId)) {
+        const pendingRequest = this.pendingUPIRequests.get(txnId)!;
+        this.pendingUPIRequests.delete(txnId);
+
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...details,
+          status: "COMPLETE",
+        });
+      }
+    } catch (error) {
+      console.error("Error handling UPI transaction complete:", error);
+
+      // If parsing failed but we can extract txnId, reject the pending request
+      try {
+        const details = JSON.parse(value);
+        if (details.txnId && this.pendingUPIRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingUPIRequests.get(details.txnId)!;
+          this.pendingUPIRequests.delete(details.txnId);
+          pendingRequest.reject(error);
+        }
+      } catch (parseError) {
+        console.error("Could not parse value for error handling:", parseError);
+      }
+    }
+  }
+
+  //   {
+  //     "transactionId": "TXN032509211252467",
+  //     "data": {
+  //         "type": "UPI",
+  //         "txnId": "TXN032509211252467",
+  //         "toVpa": "2342344562@pvb",
+  //         "fromVpa": "2342344562@cmk",
+  //         "amount": 19,
+  //         "requestedBy": "NTH-to-456123"
+  //     },
+  //     "beneficiaryBank": {
+  //         "accountNo": "348861268832",
+  //         "ifscCode": "PVB42245114",
+  //         "contactNo": "2342344562",
+  //         "name": "Mohit Gajjar",
+  //         "vpa": "2342344562@pvb",
+  //         "txnId": "TXN032509211252467"
+  //     },
+  //     "senderBank": {
+  //         "accountNo": "348861268832",
+  //         "ifscCode": "PVB42245114",
+  //         "contactNo": "2342344562",
+  //         "name": "Mohit Gajjar",
+  //         "vpa": "2342344562@cmk",
+  //         "txnId": "TXN032509211252467"
+  //     }
+  // }
+
+  private async handleUpiDebitRemitter(value: string): Promise<void> {
+    console.log("Handling UPI debit remitter", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI debit remitter", details);
+      const accountNo = details.senderBank.accountNo;
+      const ifscCode = details.senderBank.ifscCode;
+      const contactNo = details.senderBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      const [debitResult, txSaved] = await Promise.all([
+        debitBankAccount(accountNo, ifscCode, contactNo, amount),
+        storeTransaction(txnId, amount, "DEBIT", accountNo, `UPI/${contactNo}`),
+      ]);
+
+      console.log("Transaction saved:", txSaved);
+
+      if (!debitResult.success) {
+        console.error("Error debiting bank account:", debitResult);
+        return;
+      }
+
+      await this.sendToNth(MessageType.UPI_DEBIT_REMITTER_SUCCESS, value);
+    } catch (error) {
+      console.error("Error handling UPI debit remitter:", error);
+    }
+  }
+
+  private async handleUpiCreditBeneficiary(value: string): Promise<void> {
+    console.log("Handling UPI credit beneficiary", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling UPI credit beneficiary", details);
+      const accountNo = details.beneficiaryBank.accountNo;
+      const ifscCode = details.beneficiaryBank.ifscCode;
+      const contactNo = details.beneficiaryBank.contactNo;
+      const txnId = details.txnId;
+      const amount = details.amount;
+
+      const [creditResult, txSaved] = await Promise.all([
+        creditBankAccount(accountNo, ifscCode, contactNo, amount),
+        storeTransaction(
+          txnId,
+          amount,
+          "CREDIT",
+          accountNo,
+          `UPI/${contactNo}`
+        ),
+      ]);
+
+      console.log("Transaction saved:", txSaved);
+
+      if (!creditResult.success) {
+        console.error("Error crediting bank account:", creditResult);
+        return;
+      }
+
+      await this.sendToNth(MessageType.UPI_CREDIT_BENEFICIARY_SUCCESS, value);
+    } catch (error) {
+      console.error("Error handling UPI credit beneficiary:", error);
+    }
+  }
+
+  private async handleVerifyToVpa(value: string): Promise<void> {
+    console.log("Handling verify TO vpa", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling verify vpa", details);
+      const vpaResult = await verifyVpaService(details.toVpa, details.txnId);
+
+      if (!vpaResult.success) {
+        console.error("Error verifying vpa:", vpaResult);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.VERIFY_TO_VPA_COMPLETE,
+        JSON.stringify({ ...vpaResult.data, txnId: details.txnId })
+      );
+    } catch (error) {
+      console.error("Error handling verify vpa:", error);
+      await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleVerifyFromVpa(value: string): Promise<void> {
+    console.log("Handling verify FROM vpa", value);
+    try {
+      const details = JSON.parse(value);
+      console.log("Handling verify vpa", details);
+      const vpaResult = await verifyVpaService(details.fromVpa, details.txnId);
+
+      if (!vpaResult.success) {
+        console.error("Error verifying vpa:", vpaResult);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.VERIFY_FROM_VPA_COMPLETE,
+        JSON.stringify({ ...vpaResult.data, txnId: details.txnId })
+      );
+    } catch (error) {
+      console.error("Error handling verify vpa:", error);
+      await this.sendNotFoundResponse();
     }
   }
 
@@ -144,9 +374,9 @@ class IMPSKafkaService {
       });
 
       // Check if there's a pending request for this transaction
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        const pendingRequest = this.pendingRequests.get(details.txnId)!;
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
 
         // Resolve the promise with the complete transfer details
         pendingRequest.reject(new Error(details.reasonOfFailure));
@@ -157,9 +387,9 @@ class IMPSKafkaService {
       // If parsing failed but we can extract txnId, reject the pending request
       try {
         const details = JSON.parse(value);
-        if (details.txnId && this.pendingRequests.has(details.txnId)) {
-          const pendingRequest = this.pendingRequests.get(details.txnId)!;
-          this.pendingRequests.delete(details.txnId);
+        if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+          this.pendingIMPSRequests.delete(details.txnId);
           pendingRequest.reject(error);
         }
       } catch (parseError) {
@@ -196,9 +426,9 @@ class IMPSKafkaService {
       });
 
       // Check if there's a pending request for this transaction
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        const pendingRequest = this.pendingRequests.get(details.txnId)!;
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
 
         // Resolve the promise with the complete transfer details
         pendingRequest.resolve({
@@ -212,9 +442,9 @@ class IMPSKafkaService {
       // If parsing failed but we can extract txnId, reject the pending request
       try {
         const details = JSON.parse(value);
-        if (details.txnId && this.pendingRequests.has(details.txnId)) {
-          const pendingRequest = this.pendingRequests.get(details.txnId)!;
-          this.pendingRequests.delete(details.txnId);
+        if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+          const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+          this.pendingIMPSRequests.delete(details.txnId);
           pendingRequest.reject(error);
         }
       } catch (parseError) {
@@ -238,13 +468,32 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(
+      await this.sendToNth(
         MessageType.VERIFIED_DETAILS,
         JSON.stringify(account)
       );
     } catch (error) {
       console.error("Error handling verify details:", error);
       await this.sendNotFoundResponse();
+    }
+  }
+
+  private async handleBankDetailsAdded(value: string): Promise<void> {
+    try {
+      const details = JSON.parse(value);
+      // Check if there's a pending request for this transaction
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        const pendingRequest = this.pendingIMPSRequests.get(details.txnId)!;
+        this.pendingIMPSRequests.delete(details.txnId);
+        const res = await createVpaAndLinkAccount(details);
+        // Resolve the promise with the complete transfer details
+        pendingRequest.resolve({
+          ...res,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to initialize Kafka service:", error);
+      throw error;
     }
   }
 
@@ -283,7 +532,7 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(MessageType.DEBIT_SUCCESS, value);
+      await this.sendToNth(MessageType.DEBIT_SUCCESS, value);
     } catch (error) {
       console.error("Error handling debit request:", error);
     }
@@ -324,13 +573,13 @@ class IMPSKafkaService {
         return;
       }
 
-      await this.sendResponse(MessageType.CREDIT_SUCCESS, value);
+      await this.sendToNth(MessageType.CREDIT_SUCCESS, value);
     } catch (error) {
       console.error("Error handling credit request:", error);
     }
   }
 
-  private async sendResponse(key: string, value: string): Promise<void> {
+  private async sendToNth(key: string, value: string): Promise<void> {
     try {
       await this.producer.send({
         topic: SEND_TOPIC,
@@ -349,7 +598,7 @@ class IMPSKafkaService {
   }
 
   private async sendNotFoundResponse(): Promise<void> {
-    await this.sendResponse(MessageType.ACCOUNT_DETAILS, "Not Found");
+    await this.sendToNth(MessageType.ACCOUNT_DETAILS, "Not Found");
   }
 
   // Updated method that returns a Promise and waits for completion
@@ -388,8 +637,8 @@ class IMPSKafkaService {
       const transferPromise = new Promise((resolve, reject) => {
         // Set timeout
         const timeoutId = setTimeout(() => {
-          if (this.pendingRequests.has(details.txnId)) {
-            this.pendingRequests.delete(details.txnId);
+          if (this.pendingIMPSRequests.has(details.txnId)) {
+            this.pendingIMPSRequests.delete(details.txnId);
             reject(
               new Error(
                 "IMPS transfer timeout - no completion response received"
@@ -398,7 +647,7 @@ class IMPSKafkaService {
           }
         }, this.TIMEOUT_MS);
 
-        this.pendingRequests.set(details.txnId, {
+        this.pendingIMPSRequests.set(details.txnId, {
           resolve: (value) => {
             clearTimeout(timeoutId);
             resolve(value);
@@ -412,10 +661,7 @@ class IMPSKafkaService {
       });
 
       // Send the transfer request
-      await this.sendResponse(
-        MessageType.IMPS_TRANSFER,
-        JSON.stringify(details)
-      );
+      await this.sendToNth(MessageType.IMPS_TRANSFER, JSON.stringify(details));
 
       console.log("IMPS transfer initiated, waiting for completion...");
 
@@ -425,12 +671,174 @@ class IMPSKafkaService {
       console.error("Error initiating IMPS transfer:", error);
 
       // Clean up pending request if it exists
-      if (details.txnId && this.pendingRequests.has(details.txnId)) {
-        this.pendingRequests.delete(details.txnId);
+      if (details.txnId && this.pendingIMPSRequests.has(details.txnId)) {
+        this.pendingIMPSRequests.delete(details.txnId);
       }
 
       throw error;
     }
+  }
+
+  async initAddBank(contactNo: string, ifscCode: string, txnId: string) {
+    try {
+      if (!this.isConnected) {
+        await this.initialize();
+      }
+
+      const transferPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (this.pendingIMPSRequests.has(txnId)) {
+            this.pendingIMPSRequests.delete(txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingIMPSRequests.set(txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      await this.sendToNth(
+        MessageType.ADD_BANK_DETAILS,
+        JSON.stringify({
+          txnId,
+          contactNo,
+          ifscCode,
+          requestedBy: RECEIVE_TOPIC,
+        })
+      );
+
+      console.log("Bank details verification, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
+    } catch (error) {
+      console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (txnId && this.pendingIMPSRequests.has(txnId)) {
+        this.pendingIMPSRequests.delete(txnId);
+      }
+
+      throw error;
+    }
+  }
+
+  async initPushTransaction(
+    toVpa: string,
+    fromVpa: string,
+    amount: number,
+    txnId: string
+  ) {
+    try {
+      if (!this.isConnected) {
+        await this.initialize();
+      }
+
+      const transferPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          if (this.pendingUPIRequests.has(txnId)) {
+            this.pendingUPIRequests.delete(txnId);
+            reject(
+              new Error(
+                "IMPS transfer timeout - no completion response received"
+              )
+            );
+          }
+        }, this.TIMEOUT_MS);
+
+        this.pendingUPIRequests.set(txnId, {
+          resolve: (value) => {
+            clearTimeout(timeoutId);
+            resolve(value);
+          },
+          reject: (reason) => {
+            clearTimeout(timeoutId);
+            reject(reason);
+          },
+          timestamp: Date.now(),
+        });
+      });
+
+      await this.sendToNth(
+        MessageType.INIT_PUSH_TRANSACTION,
+        JSON.stringify({
+          txnId,
+          toVpa,
+          fromVpa,
+          amount,
+          requestedBy: RECEIVE_TOPIC,
+        })
+      );
+
+      console.log("Bank details verification, waiting for completion...");
+
+      // Return the promise that will resolve when transfer completes
+      return await transferPromise;
+    } catch (error) {
+      console.error("Error initiating IMPS transfer:", error);
+
+      // Clean up pending request if it exists
+      if (txnId && this.pendingIMPSRequests.has(txnId)) {
+        this.pendingIMPSRequests.delete(txnId);
+      }
+
+      throw error;
+    }
+  }
+
+  async addBank(value: string) {
+    try {
+      const data = JSON.parse(value);
+      console.log(data);
+      const { txnId, contactNo, ifscCode, requestedBy } = data;
+      console.log("Adding bank details");
+
+      if (!contactNo || !ifscCode || !txnId) {
+        const key = "upi-bank-details-adding-error";
+        const value = "Missing contact number or IFSC code or TXN ID";
+        await this.sendToNth(key, value);
+        return;
+      }
+
+      const bankAccount = await getAccountByContact(
+        contactNo,
+        ifscCode,
+        requestedBy,
+        txnId
+      );
+
+      if (!bankAccount) {
+        const key = "upi-bank-details-adding-error";
+        const value = "Bank account not found";
+        await this.sendToNth(key, value);
+        return;
+      }
+
+      await this.sendToNth(
+        MessageType.BANK_DETAILS_ADDED,
+        JSON.stringify({
+          ...bankAccount,
+        })
+      );
+    } catch (error) {
+      console.error("Failed to initialize Kafka service:", error);
+      throw error;
+    }
+    // Save initial log
+    // if (contactNo && ifscCode && txnId) {
   }
 
   async disconnect(): Promise<void> {
@@ -442,10 +850,10 @@ class IMPSKafkaService {
       }
 
       // Reject all pending requests
-      for (const [txnId, request] of this.pendingRequests.entries()) {
+      for (const [txnId, request] of this.pendingIMPSRequests.entries()) {
         request.reject(new Error("Service disconnected"));
       }
-      this.pendingRequests.clear();
+      this.pendingIMPSRequests.clear();
 
       await Promise.all([
         this.consumer.disconnect(),
@@ -473,5 +881,18 @@ export const listernForNTH = () => getIMPSKafkaService().listenForNTH();
 // Updated export that returns a Promise
 export const initiateIMPSTransfer = (details: TransferDetails): Promise<any> =>
   getIMPSKafkaService().initiateIMPSTransfer(details);
+
+export const linkBankDetails = (
+  contactNo: string,
+  ifscCode: string,
+  txnId: string
+) => getIMPSKafkaService().initAddBank(contactNo, ifscCode, txnId);
+
+export const pushTransaction = (
+  toVpa: string,
+  fromVpa: string,
+  amount: number,
+  txnId: string
+) => getIMPSKafkaService().initPushTransaction(toVpa, fromVpa, amount, txnId);
 
 export default getIMPSKafkaService;

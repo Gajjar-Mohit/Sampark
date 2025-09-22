@@ -161,27 +161,27 @@ class IMPSKafkaService {
       const txnId = details.txnId;
       const amount = details.amount;
 
-      // await saveLog({
-      //   transactionId: txnId,
-      //   data: {
-      //     mode: "UPI",
-      //     amount,
-      //     status: "COMPLETE",
-      //     reasonOfFailure: "",
-      //     remitterAccount: {
-      //       accountNo,
-      //       ifscCode,
-      //       contactNo,
-      //       mmid: "",
-      //     },
-      //     beneficiaryAccount: {
-      //       accountNo,
-      //       ifscCode,
-      //       contactNo,
-      //       mmid: "",
-      //     },
-      //   },
-      // });
+      await saveLog({
+        transactionId: txnId,
+        data: {
+          mode: "UPI",
+          amount,
+          status: "COMPLETE",
+          reasonOfFailure: "",
+          remitterAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+          beneficiaryAccount: {
+            accountNo,
+            ifscCode,
+            contactNo,
+            mmid: "",
+          },
+        },
+      });
 
       // Check if there's a pending request for this transaction
       if (txnId && this.pendingUPIRequests.has(txnId)) {

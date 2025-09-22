@@ -45,7 +45,29 @@ export const createAccount = async (
 
   return account;
 };
+export const getAccountByContact = async (
+  contactNo: string,
+  ifscCode: string,
+  requestedBy: string,
+  txnId: string
+) => {
+  const account = await prisma.bankAccount.findFirst({
+    where: {
+      accountHolderContactNo: contactNo,
+      ifscCode: ifscCode,
+    },
+  });
 
+  if (!account) {
+    throw new CustomError("Contact is not registered", 400);
+  }
+
+  return {
+    ...account,
+    requestedBy,
+    txnId,
+  };
+};
 export const getAccountByMMID = async (mmid: string, contactNo: string) => {
   return await prisma.bankAccount.findFirst({
     where: {
