@@ -16,8 +16,8 @@ export async function createConnections() {
     registeredBanks.forEach(async (bank) => {
       const iin1 = bank.iin + "-to-NTH";
       const iin2 = "NTH-to-" + bank.iin;
-      console.log("Creating channel for bank ", bank.name, iin1, iin2);
       if (!topics.includes(iin1)) {
+        console.log("Creating channel for bank ", bank.name, iin1, iin2);
         await admin.createTopics({
           topics: [
             {
@@ -35,9 +35,8 @@ export async function createConnections() {
           ],
         });
       }
+      console.log("Channels Created Successfully");
     });
-
-    console.log("Channels Created Successfully");
   } catch (error) {
     console.error("Error during Kafka admin operations:", error);
   }

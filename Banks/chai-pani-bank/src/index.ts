@@ -5,6 +5,7 @@ import router from "./routes";
 import { Kafka } from "kafkajs";
 import { listernForNTH } from "./services/nth.service";
 import { createClient } from "redis";
+import client from "prom-client";
 
 const app = express();
 if (!process.env.KAFKA_BASEURL) {
@@ -64,6 +65,15 @@ app.use(cors());
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+const collectDefaultMetrics = client.collectDefaultMetrics;
+
+collectDefaultMetrics({ register: client.register });
+
+app.use("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.send(await client.register.metrics());
+});
+
 
 app.use("/api/v1", router);
 

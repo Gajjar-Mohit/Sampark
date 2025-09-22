@@ -51,6 +51,58 @@ services:
       driver: "none"
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    ports:
+      - 3006:3000
+    environment:
+      # Disable all Grafana logging
+      GF_LOG_LEVEL: "off"
+      GF_LOG_MODE: ""
+      GF_LOG_CONSOLE_LEVEL: "off"
+      GF_LOG_FILE_LEVEL: "off"
+      GF_ALERTING_ENABLED: "false"
+      GF_METRICS_ENABLED: "false"
+      GF_TRACING_ENABLED: "false"
+    networks:
+      - grafana-network
+    logging:
+      driver: "none"
+    restart: unless-stopped
+
+  prom-server:
+    image: prom/prometheus
+    container_name: prom-server
+    depends_on:
+      - grafana
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+    environment:
+      # Disable Prometheus logging
+      PROMETHEUS_LOG_LEVEL: "off"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--log.level=error'
+    networks:
+      - grafana-network
+      - kafka-network
+      - chai-pani-network
+      - chinta-mat-karo-network
+      - paisa-vasool-bank-network
+      - babu-rao-ganpatrao-bank-network
+      - bazzar-pe-network
+      - chillar-pay-network
+    logging:
+      driver: "none"
+    restart: unless-stopped
+    
   # Shared Redis Instance
   redis-stack:
     image: redis/redis-stack:latest
@@ -73,6 +125,8 @@ services:
       context: ./nth
       dockerfile: Dockerfile
     container_name: nth-service
+    ports:
+      - "3005:3000"
     environment:
       NODE_ENV: production
       KAFKA_BASEURL: kafka:9092
@@ -81,6 +135,7 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      PORT: 3000
     depends_on:
       kafka:
         condition: service_healthy
@@ -193,6 +248,8 @@ services:
     depends_on:
       babu-rao-ganpatrao-bank-db:
         condition: service_healthy
+      babu-rao-ganpatrao-bank-redis-stack:
+        condition: service_started
       kafka:
         condition: service_healthy
     networks:
@@ -231,6 +288,8 @@ services:
     depends_on:
       chai-pani-db:
         condition: service_healthy
+      chai-pani-redis-stack:
+        condition: service_started
       kafka:
         condition: service_healthy
     networks:
@@ -269,6 +328,8 @@ services:
     depends_on:
       chinta-mat-karo-db:
         condition: service_healthy
+      chinta-mat-karo-redis-stack:
+        condition: service_started
       kafka:
         condition: service_healthy
     networks:
@@ -307,6 +368,8 @@ services:
     depends_on:
       paisa-vasool-bank-db:
         condition: service_healthy
+      paisa-vasool-bank-redis-stack:
+        condition: service_started
       kafka:
         condition: service_healthy
     networks:
@@ -390,16 +453,15 @@ services:
     container_name: bazzar-pe-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: bazzar-pe-db
-      POSTGRES_USER: bazzar-pe_user
-      POSTGRES_PASSWORD: bazzar-pe_password
-
+      POSTGRES_DB: bazzar_pe_db
+      POSTGRES_USER: bazzar_pe_user
+      POSTGRES_PASSWORD: bazzar_pe_password
     volumes:
-      - postgres_bazzar-pe_data:/var/lib/postgresql/data
+      - postgres_bazzar_pe_data:/var/lib/postgresql/data
     networks:
       - bazzar-pe-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bazzar-pe_user -d bazzar-pe-db"]
+      test: ["CMD-SHELL", "pg_isready -U bazzar_pe_user -d bazzar_pe_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -414,7 +476,7 @@ services:
       - "6001:8000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://bazzar-pe_user:bazzar-pe_password@bazzar-pe-db:5432/bazzar-pe-db
+      DATABASE_URL: postgresql://bazzar_pe_user:bazzar_pe_password@bazzar-pe-db:5432/bazzar_pe_db
       PSP_URL: http://paisa-vasool-bank-service:3000/api/v1
       PORT: 8000
     depends_on:
@@ -432,20 +494,21 @@ services:
         bun prisma migrate deploy &&
         bun run dev
       "  
+
   chillar-pay-db:
     image: postgres:15-alpine
     container_name: chillar-pay-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: chillar-pay_db
-      POSTGRES_USER: chillar-pay_user
-      POSTGRES_PASSWORD: chillar-pay_password 
+      POSTGRES_DB: chillar_pay_db
+      POSTGRES_USER: chillar_pay_user
+      POSTGRES_PASSWORD: chillar_pay_password 
     volumes:
-      - postgres_chillar-pay_data:/var/lib/postgresql/data
+      - postgres_chillar_pay_data:/var/lib/postgresql/data
     networks:
       - chillar-pay-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chillar-pay_user -d chillar-pay_db"]
+      test: ["CMD-SHELL", "pg_isready -U chillar_pay_user -d chillar_pay_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -460,7 +523,7 @@ services:
       - "6002:8000" 
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://chillar-pay_user:chillar-pay_password@chillar-pay-db:5432/chillar-pay_db
+      DATABASE_URL: postgresql://chillar_pay_user:chillar_pay_password@chillar-pay-db:5432/chillar_pay_db
       PORT: 8000
       PSP_URL: http://chinta-mat-karo-service:3000/api/v1
     depends_on:
@@ -494,7 +557,8 @@ networks:
     driver: bridge
   chillar-pay-network:
     driver: bridge
-
+  grafana-network:
+    driver: bridge
 
 volumes:
   redis-data:
@@ -506,5 +570,5 @@ volumes:
   postgres_chai_pani_data:
   postgres_chinta_mat_karo_data:
   postgres_paisa_vasool_bank_data:
-  postgres_bazzar-pe_data:
-  postgres_chillar-pay_data:
+  postgres_bazzar_pe_data:
+  postgres_chillar_pay_data:

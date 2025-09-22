@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 4s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          [
+            "nth-switch:3000",
+            "babu-rao-ganpatrao-bank-service:3000",
+            "chai-pani-service:3000",
+            "chinta-mat-karo-service:3000",
+            "paisa-vasool-bank-service:3000",
+            "bazzar-pe-service:8000",
+            "chillar-pay-service:8000"
+          ]
