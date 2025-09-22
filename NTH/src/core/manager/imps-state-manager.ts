@@ -6,7 +6,7 @@ import {
   creditToBeneficiary,
   debitFromRemitter,
   verifyDetails,
-} from "./imps.processor";
+} from "../processor/imps.processor";
 import { registeredBanks } from "../registered-banks";
 import {
   saveIntermidiateTXState,

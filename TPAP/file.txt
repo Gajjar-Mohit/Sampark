@@ -1,0 +1,11 @@
+1. Alice enters Bob’s UPI ID bob and the amount INR 100
+
+2. PhonePe verifies and forwards the request to NPCI via ICICI bank
+
+3. NPCI requests Axis Bank to resolve detail for bob at axis
+
+4. NPCI deducts Alice’s HDFC bank account by INR 100
+
+5. NPCI sends an instruction to SBI bank and add INR 100 to Bob’s account in SBI bank.
+ 
+6. Upon success, NPCI notifies the payment apps via acquiring banks.
