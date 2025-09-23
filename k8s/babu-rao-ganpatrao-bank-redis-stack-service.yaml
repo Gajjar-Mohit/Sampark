@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: babu-rao-ganpatrao-bank-redis-stack
+  name: babu-rao-ganpatrao-bank-redis-stack
+spec:
+  ports:
+    - name: "6380"
+      port: 6380
+      targetPort: 6379
+    - name: "8002"
+      port: 8002
+      targetPort: 8001
+  selector:
+    io.kompose.service: babu-rao-ganpatrao-bank-redis-stack

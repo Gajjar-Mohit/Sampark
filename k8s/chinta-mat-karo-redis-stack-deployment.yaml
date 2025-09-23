@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chinta-mat-karo-redis-stack
+  name: chinta-mat-karo-redis-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chinta-mat-karo-redis-stack
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chinta-mat-karo-redis-stack
+    spec:
+      containers:
+        - image: redis/redis-stack:latest
+          name: chinta-mat-karo-redis-stack
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+            - containerPort: 8001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: chinta-mat-karo-redis-data
+      restartPolicy: Always
+      volumes:
+        - name: chinta-mat-karo-redis-data
+          persistentVolumeClaim:
+            claimName: chinta-mat-karo-redis-data

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chillar-pay-service
+  name: chillar-pay-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chillar-pay-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chillar-pay-service
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - |2
+                echo 'Waiting for database to be ready...' &&
+                bun prisma migrate deploy &&
+                bun run dev
+          env:
+            - name: DATABASE_URL
+              value: postgresql://chillar_pay_user:chillar_pay_password@chillar-pay-db:5432/chillar_pay_db
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "8000"
+            - name: PSP_URL
+              value: http://chinta-mat-karo-service:3000/api/v1
+          image: chillar-pay-service
+          name: chillar-pay-service
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+      restartPolicy: Always

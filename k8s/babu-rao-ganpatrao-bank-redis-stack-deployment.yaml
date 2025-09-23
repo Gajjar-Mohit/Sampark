@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: babu-rao-ganpatrao-bank-redis-stack
+  name: babu-rao-ganpatrao-bank-redis-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: babu-rao-ganpatrao-bank-redis-stack
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: babu-rao-ganpatrao-bank-redis-stack
+    spec:
+      containers:
+        - image: redis/redis-stack:latest
+          name: babu-rao-ganpatrao-bank-redis-stack
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+            - containerPort: 8001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: babu-rao-ganpatrao-bank-redis-data
+      restartPolicy: Always
+      volumes:
+        - name: babu-rao-ganpatrao-bank-redis-data
+          persistentVolumeClaim:
+            claimName: babu-rao-ganpatrao-bank-redis-data

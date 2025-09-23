@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: paisa-vasool-bank-redis-stack
+  name: paisa-vasool-bank-redis-stack
+spec:
+  ports:
+    - name: "6383"
+      port: 6383
+      targetPort: 6379
+    - name: "8005"
+      port: 8005
+      targetPort: 8001
+  selector:
+    io.kompose.service: paisa-vasool-bank-redis-stack

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chillar-pay-db
+  name: chillar-pay-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chillar-pay-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chillar-pay-db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: chillar_pay_db
+            - name: POSTGRES_PASSWORD
+              value: chillar_pay_password
+            - name: POSTGRES_USER
+              value: chillar_pay_user
+          image: postgres:15-alpine
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready -U chillar_pay_user -d chillar_pay_db
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: chillar-pay-db
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-chillar-pay-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-chillar-pay-data
+          persistentVolumeClaim:
+            claimName: postgres-chillar-pay-data

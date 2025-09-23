@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: babu-rao-ganpatrao-bank-service
+  name: babu-rao-ganpatrao-bank-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: babu-rao-ganpatrao-bank-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: babu-rao-ganpatrao-bank-service
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - |2
+                echo 'Waiting for database to be ready...' &&
+                bun prisma migrate deploy &&
+                bun run seed &&
+                bun run src/index.ts
+          env:
+            - name: DATABASE_URL
+              value: postgresql://babu_rao_ganpatrao_bank_user:babu_rao_ganpatrao_bank_password@babu-rao-ganpatrao-bank-db:5432/babu_rao_ganpatrao_bank_db
+            - name: IIN
+              value: "654321"
+            - name: KAFKA_BASEURL
+              value: kafka:9092
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: REDIS_DB
+              value: "0"
+            - name: REDIS_HOST
+              value: babu-rao-ganpatrao-bank-redis-stack
+            - name: REDIS_PASSWORD
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_URL
+              value: redis://babu-rao-ganpatrao-bank-redis-stack:6379
+          image: babu-rao-ganpatrao-bank-service
+          name: babu-rao-ganpatrao-bank-service
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+      restartPolicy: Always

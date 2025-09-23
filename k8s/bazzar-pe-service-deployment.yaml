@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: bazzar-pe-service
+  name: bazzar-pe-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: bazzar-pe-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: bazzar-pe-service
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - |2
+                echo 'Waiting for database to be ready...' &&
+                bun prisma migrate deploy &&
+                bun run dev
+          env:
+            - name: DATABASE_URL
+              value: postgresql://bazzar_pe_user:bazzar_pe_password@bazzar-pe-db:5432/bazzar_pe_db
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "8000"
+            - name: PSP_URL
+              value: http://paisa-vasool-bank-service:3000/api/v1
+          image: bazzar-pe-service
+          name: bazzar-pe-service
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+      restartPolicy: Always

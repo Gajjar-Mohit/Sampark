@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chinta-mat-karo-service
+  name: chinta-mat-karo-service
+spec:
+  ports:
+    - name: "3003"
+      port: 3003
+      targetPort: 3000
+  selector:
+    io.kompose.service: chinta-mat-karo-service

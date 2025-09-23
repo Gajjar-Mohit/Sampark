@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chai-pani-db
+  name: chai-pani-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chai-pani-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chai-pani-db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: chai_pani_db
+            - name: POSTGRES_PASSWORD
+              value: chai_pani_password
+            - name: POSTGRES_USER
+              value: chai_pani_user
+          image: postgres:15-alpine
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready -U chai_pani_user -d chai_pani_db
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: chai-pani-db
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-chai-pani-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-chai-pani-data
+          persistentVolumeClaim:
+            claimName: postgres-chai-pani-data

@@ -51,57 +51,57 @@ services:
       driver: "none"
     restart: unless-stopped
 
-  grafana:
-    image: grafana/grafana-oss
-    container_name: grafana
-    ports:
-      - 3006:3000
-    environment:
-      # Disable all Grafana logging
-      GF_LOG_LEVEL: "off"
-      GF_LOG_MODE: ""
-      GF_LOG_CONSOLE_LEVEL: "off"
-      GF_LOG_FILE_LEVEL: "off"
-      GF_ALERTING_ENABLED: "false"
-      GF_METRICS_ENABLED: "false"
-      GF_TRACING_ENABLED: "false"
-    networks:
-      - grafana-network
-    logging:
-      driver: "none"
-    restart: unless-stopped
+  # grafana:
+  #   image: grafana/grafana-oss
+  #   container_name: grafana
+  #   ports:
+  #     - 3006:3000
+  #   environment:
+  #     # Disable all Grafana logging
+  #     GF_LOG_LEVEL: "off"
+  #     GF_LOG_MODE: ""
+  #     GF_LOG_CONSOLE_LEVEL: "off"
+  #     GF_LOG_FILE_LEVEL: "off"
+  #     GF_ALERTING_ENABLED: "false"
+  #     GF_METRICS_ENABLED: "false"
+  #     GF_TRACING_ENABLED: "false"
+  #   networks:
+  #     - grafana-network
+  #   logging:
+  #     driver: "none"
+  #   restart: unless-stopped
 
-  prometheus-server:
-    image: prom/prometheus
-    container_name: prometheus-server
-    depends_on:
-      - grafana
-    ports:
-      - 9090:9090
-    volumes:
-      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
-    environment:
-      # Disable Prometheus logging
-      PROMETHEUS_LOG_LEVEL: "off"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--log.level=error'
-    networks:
-      - grafana-network
-      - kafka-network
-      - chai-pani-network
-      - chinta-mat-karo-network
-      - paisa-vasool-bank-network
-      - babu-rao-ganpatrao-bank-network
-      - bazzar-pe-network
-      - chillar-pay-network
-    logging:
-      driver: "none"
-    restart: unless-stopped
+  # prometheus-server:
+  #   image: prom/prometheus
+  #   container_name: prometheus-server
+  #   depends_on:
+  #     - grafana
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+  #   environment:
+  #     # Disable Prometheus logging
+  #     PROMETHEUS_LOG_LEVEL: "off"
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
+  #     - '--web.console.templates=/etc/prometheus/consoles'
+  #     - '--web.enable-lifecycle'
+  #     - '--log.level=error'
+  #   networks:
+  #     - grafana-network
+  #     - kafka-network
+  #     - chai-pani-network
+  #     - chinta-mat-karo-network
+  #     - paisa-vasool-bank-network
+  #     - babu-rao-ganpatrao-bank-network
+  #     - bazzar-pe-network
+  #     - chillar-pay-network
+  #   logging:
+  #     driver: "none"
+  #   restart: unless-stopped
     
   # Shared Redis Instance
   redis-stack:

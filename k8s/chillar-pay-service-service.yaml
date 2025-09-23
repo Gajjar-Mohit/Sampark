@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chillar-pay-service
+  name: chillar-pay-service
+spec:
+  ports:
+    - name: "6002"
+      port: 6002
+      targetPort: 8000
+  selector:
+    io.kompose.service: chillar-pay-service

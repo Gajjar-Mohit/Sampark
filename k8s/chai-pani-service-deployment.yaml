@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chai-pani-service
+  name: chai-pani-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chai-pani-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chai-pani-service
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - |2
+                echo 'Waiting for database to be ready...' &&
+                bun prisma migrate deploy &&
+                bun run seed &&
+                bun run src/index.ts
+          env:
+            - name: DATABASE_URL
+              value: postgresql://chai_pani_user:chai_pani_password@chai-pani-db:5432/chai_pani_db
+            - name: IIN
+              value: "789456"
+            - name: KAFKA_BASEURL
+              value: kafka:9092
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: REDIS_DB
+              value: "0"
+            - name: REDIS_HOST
+              value: chai-pani-redis-stack
+            - name: REDIS_PASSWORD
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_URL
+              value: redis://chai-pani-redis-stack:6379
+          image: chai-pani-service
+          name: chai-pani-service
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+      restartPolicy: Always

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chai-pani-redis-stack
+  name: chai-pani-redis-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chai-pani-redis-stack
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chai-pani-redis-stack
+    spec:
+      containers:
+        - image: redis/redis-stack:latest
+          name: chai-pani-redis-stack
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+            - containerPort: 8001
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: chai-pani-redis-data
+      restartPolicy: Always
+      volumes:
+        - name: chai-pani-redis-data
+          persistentVolumeClaim:
+            claimName: chai-pani-redis-data

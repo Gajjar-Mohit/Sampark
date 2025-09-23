@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chai-pani-service
+  name: chai-pani-service
+spec:
+  ports:
+    - name: "3002"
+      port: 3002
+      targetPort: 3000
+  selector:
+    io.kompose.service: chai-pani-service

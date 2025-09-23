@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chai-pani-redis-stack
+  name: chai-pani-redis-stack
+spec:
+  ports:
+    - name: "6381"
+      port: 6381
+      targetPort: 6379
+    - name: "8003"
+      port: 8003
+      targetPort: 8001
+  selector:
+    io.kompose.service: chai-pani-redis-stack

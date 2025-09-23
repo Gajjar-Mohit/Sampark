@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: bazzar-pe-db
+  name: bazzar-pe-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: bazzar-pe-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: bazzar-pe-db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: bazzar_pe_db
+            - name: POSTGRES_PASSWORD
+              value: bazzar_pe_password
+            - name: POSTGRES_USER
+              value: bazzar_pe_user
+          image: postgres:15-alpine
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready -U bazzar_pe_user -d bazzar_pe_db
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: bazzar-pe-db
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-bazzar-pe-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-bazzar-pe-data
+          persistentVolumeClaim:
+            claimName: postgres-bazzar-pe-data

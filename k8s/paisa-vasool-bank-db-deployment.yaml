@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: paisa-vasool-bank-db
+  name: paisa-vasool-bank-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: paisa-vasool-bank-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: paisa-vasool-bank-db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: paisa_vasool_bank_db
+            - name: POSTGRES_PASSWORD
+              value: paisa_vasool_bank_password
+            - name: POSTGRES_USER
+              value: paisa_vasool_bank_user
+          image: postgres:15-alpine
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready -U paisa_vasool_bank_user -d paisa_vasool_bank_db
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: paisa-vasool-bank-db
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-paisa-vasool-bank-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-paisa-vasool-bank-data
+          persistentVolumeClaim:
+            claimName: postgres-paisa-vasool-bank-data

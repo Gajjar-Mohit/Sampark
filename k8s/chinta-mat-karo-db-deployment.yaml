@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+    kompose.version: 1.37.0 (HEAD)
+  labels:
+    io.kompose.service: chinta-mat-karo-db
+  name: chinta-mat-karo-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: chinta-mat-karo-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml --out k8s/
+        kompose.version: 1.37.0 (HEAD)
+      labels:
+        io.kompose.service: chinta-mat-karo-db
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: chinta_mat_karo_db
+            - name: POSTGRES_PASSWORD
+              value: chinta_mat_karo_password
+            - name: POSTGRES_USER
+              value: chinta_mat_karo_user
+          image: postgres:15-alpine
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready -U chinta_mat_karo_user -d chinta_mat_karo_db
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: chinta-mat-karo-db
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-chinta-mat-karo-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-chinta-mat-karo-data
+          persistentVolumeClaim:
+            claimName: postgres-chinta-mat-karo-data
