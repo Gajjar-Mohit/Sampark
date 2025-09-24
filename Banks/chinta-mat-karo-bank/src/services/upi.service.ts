@@ -1,7 +1,7 @@
 import prisma from "../db";
 
 export const createVpaAndLinkAccount = async (details: any) => {
-  const vpa = details.accountHolderContactNo + "@cmk";
+  const vpa = details.accountNo + "@cmk";
 
   if (details) {
     await prisma.vpaToAccountMapping.create({
