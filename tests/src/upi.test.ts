@@ -185,82 +185,82 @@ let createdTpapAccounts: any = [];
 
 describe("UPI Transfer System", () => {
   // Account Creation Tests
-//   describe("User Account Creation", () => {
-//     tpapUrls.forEach((tpap) => {
-//       describe(`Creating accounts on ${tpap.code.toUpperCase()}`, () => {
-//         test.each(testData)(
-//           "Should create account for $name (PAN: $pan)",
-//           async ({
-//             pan,
-//             name,
-//             contactNo,
-//             email,
-//             banks,
-//             bankAccounts,
-//             totalAccounts,
-//           }: ValidPerson) => {
-//             console.log(
-//               `Creating account for: ${name} (PAN: ${pan}) with ${totalAccounts} bank accounts across: ${banks.join(
-//                 ", "
-//               )}`
-//             );
+  describe("User Account Creation", () => {
+    tpapUrls.forEach((tpap) => {
+      describe(`Creating accounts on ${tpap.code.toUpperCase()}`, () => {
+        test.each(testData)(
+          "Should create account for $name (PAN: $pan)",
+          async ({
+            pan,
+            name,
+            contactNo,
+            email,
+            banks,
+            bankAccounts,
+            totalAccounts,
+          }: ValidPerson) => {
+            console.log(
+              `Creating account for: ${name} (PAN: ${pan}) with ${totalAccounts} bank accounts across: ${banks.join(
+                ", "
+              )}`
+            );
 
-//             const accountCreationResponse = await createAccounts(
-//               {
-//                 contactNo,
-//                 name,
-//                 email,
-//               },
-//               tpap.url
-//             );
-//             createdTpapAccounts.push(accountCreationResponse);
+            const accountCreationResponse = await createAccounts(
+              {
+                contactNo,
+                name,
+                email,
+              },
+              tpap.url
+            );
+            createdTpapAccounts.push(accountCreationResponse);
 
-//             expect(accountCreationResponse.status).toBe(200);
-//           }
-//         );
-//       });
-//     });
-//   });
+            expect(accountCreationResponse.status).toBe(200);
+          }
+        );
+      });
+    });
+  });
 
-//   // Bank Account Addition Tests
-//   describe("Bank Account Addition", () => {
-//     tpapUrls.forEach((tpap) => {
-//       describe(`Adding bank accounts on ${tpap.code.toUpperCase()}`, () => {
-//         test.each(testData)(
-//           "Should add all bank accounts for $name (PAN: $pan)",
-//           async ({
-//             pan,
-//             name,
-//             contactNo,
-//             email,
-//             banks,
-//             bankAccounts,
-//             totalAccounts,
-//           }: ValidPerson) => {
-//             console.log(
-//               `Adding ${totalAccounts} bank accounts for: ${name} (PAN: ${pan})`
-//             );
+  // Bank Account Addition Tests
+  describe("Bank Account Addition", () => {
+    tpapUrls.forEach((tpap) => {
+      describe(`Adding bank accounts on ${tpap.code.toUpperCase()}`, () => {
+        test.each(testData)(
+          "Should add all bank accounts for $name (PAN: $pan)",
+          async ({
+            pan,
+            name,
+            contactNo,
+            email,
+            banks,
+            bankAccounts,
+            totalAccounts,
+          }: ValidPerson) => {
+            console.log(
+              `Adding ${totalAccounts} bank accounts for: ${name} (PAN: ${pan})`
+            );
 
-//             // Add all bank accounts for this user
-//             for (const bankAccount of bankAccounts) {
-//               console.log(
-//                 `  Adding ${bankAccount.bankCode} account: ${bankAccount.accountNo} (IFSC: ${bankAccount.ifscCode})`
-//               );
+            // Add all bank accounts for this user
+            for (const bankAccount of bankAccounts) {
+              console.log(
+                `  Adding ${bankAccount.bankCode} account: ${bankAccount.accountNo} (IFSC: ${bankAccount.ifscCode})`
+              );
 
-//               const linkBankAccountResponse = await addBankAccount(
-//                 {
-//                   ifscCode: bankAccount.ifscCode,
-//                   contactNo,
-//                 },
-//                 tpap.url
-//               );
-//               expect(linkBankAccountResponse.status).toBe(200);
-//             }
-//           }
-//         );
-//       });
-//     });
-//   });
+              const linkBankAccountResponse = await addBankAccount(
+                {
+                  ifscCode: bankAccount.ifscCode,
+                  contactNo,
+                },
+                tpap.url
+              );
+              expect(linkBankAccountResponse.status).toBe(200);
+            }
+          }
+        );
+      });
+    });
+  });
 
   // UPI Transfer Tests
   describe("UPI Transfer Tests", () => {
