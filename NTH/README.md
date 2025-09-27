@@ -1,226 +1,569 @@
-# NTH - National Transaction Hub
+# NTH Module - National Transaction Hub
 
-#### Central Payment Switch for SAMPARK Payment Architecture
+## Overview
 
-## 🏛️ Overview
+The National Transaction Hub (NTH) is the central payment switch in the SAMPARK ecosystem, similar to NPCI's role in India's payment infrastructure. It acts as the core routing engine that facilitates inter-bank transactions, manages settlement processes, and ensures seamless communication between Payment Service Providers (PSPs).
 
-The **National Transaction Hub (NTH)** serves as the central switching and routing infrastructure for the SAMPARK payment ecosystem. Acting as the dummy equivalent of NPCI (National Payments Corporation of India), NTH manages retail payment systems and ensures seamless interoperability between participating banks.
+## Service Details
 
-## 🚀 Architecture
+- **Port**: 3005
+- **Container Name**: nth-service
+- **Role**: Central payment switch and transaction router
+- **Technology**: Node.js with Bun runtime
 
-### System Design
-NTH implements a Kafka-based event-driven architecture that ensures:
-- **High Availability**: Distributed messaging with fault tolerance
-- **Scalability**: Event-driven processing with consumer groups
-- **Real-time Processing**: Low-latency transaction routing
-- **Audit Trail**: Complete transaction logging and monitoring
+## Architecture
 
-### Infrastructure Components
-- **Apache Kafka**: Message broker for transaction routing
-- **Apache Zookeeper**: Cluster coordination and configuration management
-- **Docker**: Containerized deployment for easy scaling
+### Core Responsibilities
 
-## 🏦 Registered Banks
+1. **Transaction Routing**: Routes payments between different PSP banks
+2. **Settlement Coordination**: Manages inter-bank settlement processes
+3. **Message Processing**: Handles Kafka-based event processing
+4. **Switch Logic**: Implements payment switch logic for different transaction types
+5. **Network Management**: Maintains participant registry and routing tables
 
-NTH currently supports 4 participating banks with dedicated Kafka topics and consumer groups:
+### Technology Stack
 
-| Bank Name | IFSC Prefix | IIN | Bank→NTH Topic | NTH→Bank Topic |
-|-----------|-------------|-----|----------------|----------------|
-| Chinta Mat Karo Bank | CMK | 456123 | `456123-to-NTH` | `NTH-to-456123` |
-| Chai Pani Bank | CPB | 789456 | `789456-to-NTH` | `NTH-to-789456` |
-| Paisa Vasool Bank | PVB | 321987 | `321987-to-NTH` | `NTH-to-321987` |
-| Babu Rao Ganpatrao Bank | BRG | 654321 | `654321-to-NTH` | `NTH-to-654321` |
+- **Runtime**: Bun
+- **Framework**: Express.js + TypeScript
+- **Message Broker**: Apache Kafka
+- **Caching**: Redis Stack (shared instance)
+- **Containerization**: Docker
 
-### Kafka Topic Architecture
+## Service Dependencies
 
-#### **8 Topics Configuration**:
-- **4 Bank-to-NTH Topics**: Incoming transaction requests from banks
-- **4 NTH-to-Bank Topics**: Outgoing responses and settlements to banks
+### Infrastructure Dependencies
+- **Kafka**: Message broker for event-driven architecture
+- **Zookeeper**: Kafka cluster coordination
+- **Redis Stack**: Shared caching and session management
+- **Docker Network**: kafka-network for inter-service communication
 
-#### **8 Consumer Groups**:
-- **4 Bank-to-NTH Groups**: Process incoming transactions with dedicated consumers
-- **4 NTH-to-Bank Groups**: Handle outbound transaction routing
+### Integration Points
+- **PSP Banks**: All four bank services for transaction routing
+- **TPAP Applications**: Indirect integration through PSP banks
 
-## 🔄 Transaction Flow
+## Environment Variables
 
-```
-[Bank A] → [456123-to-NTH Topic] → [NTH Router] → [NTH-to-789456 Topic] → [Bank B]
-```
-
-1. **Transaction Initiation**: Source bank publishes transaction to `{IIN}-to-NTH` topic
-2. **NTH Processing**: Central router validates, processes, and determines destination
-3. **Transaction Routing**: NTH publishes to destination `NTH-to-{IIN}` topic
-4. **Bank Settlement**: Destination bank consumes and processes transaction
-5. **Response Flow**: Acknowledgments flow back through reverse path
-
-## 🛠️ Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- Network access to `192.168.1.5` (or update `KAFKA_ADVERTISED_LISTENERS`)
-
-### Installation
-
-1. **Clone and Setup**
-```bash
-git clone <repository-url>
-cd nth-payment-hub
+```env
+NODE_ENV=production
+KAFKA_BASEURL=kafka:9092
+REDIS_URL=redis://redis-stack:6379
+REDIS_HOST=redis-stack
+REDIS_PORT=6379
+REDIS_PASSWORD=""
+REDIS_DB=0
+PORT=3000
 ```
 
-2. **Start Infrastructure**
-```bash
-docker-compose up -d
+## Transaction Processing
+
+### Supported Transaction Types
+
+#### 1. UPI Transactions
+- **Flow**: TPAP → PSP → NTH → PSP → TPAP
+- **Routing**: Based on VPA resolution
+- **Settlement**: Real-time gross settlement
+
+#### 2. IMPS Transactions
+- **Flow**: Remitter Bank → NTH → Beneficiary Bank
+- **Routing**: Based on IFSC code and account number
+- **Settlement**: Immediate settlement
+
+### Transaction Flow Architecture
+
+```mermaid
+graph LR
+    A[TPAP] --> B[Sender PSP]
+    B --> C[NTH Switch]
+    C --> D[Receiver PSP]
+    D --> E[Beneficiary]
+    
+    C --> F[Settlement Engine]
+    C --> G[Routing Engine]
+    C --> H[Event Processing]
 ```
 
-3. **Verify Services**
-```bash
-# Check Zookeeper
-docker logs zookeeper
+## Kafka Integration
 
-# Check Kafka
-docker logs kafka
+### Message Patterns
 
-# Verify Kafka Topics (after application starts)
-docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list
-```
+The NTH processes various Kafka topics for different transaction types:
 
-### Configuration
+#### Producer Topics
+- `nth.transactions.processed`
+- `nth.settlements.initiated`
+- `nth.routing.decisions`
+- `nth.system.events`
 
-The system auto-creates the following Kafka topics:
-- `456123-to-NTH` / `NTH-to-456123` (Chinta Mat Karo Bank)
-- `789456-to-NTH` / `NTH-to-789456` (Chai Pani Bank)
-- `321987-to-NTH` / `NTH-to-321987` (Paisa Vasool Bank)
-- `654321-to-NTH` / `NTH-to-654321` (Babu Rao Ganpatrao Bank)
+#### Consumer Topics
+- `bank.*.transactions.outbound`
+- `bank.*.transactions.status`
+- `tpap.*.payment.requests`
 
-## 📊 System Configuration
+### Event Processing
 
-### Docker Compose Services
-
-#### Zookeeper
-- **Port**: 2181
-- **Purpose**: Kafka cluster coordination
-- **Configuration**: Single-node setup for development
-
-#### Kafka Broker
-- **Port**: 9092
-- **Advertised Listener**: `192.168.1.5:9092`
-- **Replication Factor**: 1 (development setup)
-- **Log Retention**: 7 days (168 hours)
-- **Segment Size**: 1GB
-
-### Network Architecture
-- **Network**: `kafka-network` (bridge driver)
-- **Inter-service Communication**: Docker internal networking
-- **External Access**: Host network binding on configured IP
-
-## 🔐 Security & Compliance
-
-### Transaction Security
-- **Message Encryption**: In-transit encryption for sensitive data
-- **Authentication**: IIN-based bank identification
-- **Authorization**: Topic-level access control per bank
-- **Audit Logging**: Complete transaction trail in Kafka logs
-
-### Regulatory Compliance
-- **Transaction Limits**: Configurable per bank and transaction type
-- **Settlement Windows**: Real-time and batch processing modes
-- **Fraud Detection**: Pattern analysis on transaction flows
-- **Reporting**: Automated compliance reporting generation
-
-## 📈 Monitoring & Operations
-
-### Health Checks
-```bash
-# Check Kafka cluster health
-docker exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
-
-# Monitor topic lag
-docker exec kafka kafka-consumer-groups --bootstrap-server localhost:9092 --describe --all-groups
-```
-
-### Scaling Considerations
-- **Horizontal Scaling**: Add Kafka brokers for increased throughput
-- **Topic Partitioning**: Partition topics by transaction volume
-- **Consumer Scaling**: Scale consumer groups based on processing load
-- **Database Integration**: Add persistent storage for transaction history
-
-## 🔧 Development
-
-### Adding New Banks
-1. **Update Bank Registry**:
-```javascript
-const newBank = {
-  ifscCodePrefix: "NEW",
-  iin: "123456",
-  bankToNTH: "123456-to-NTH",
-  nthToBank: "NTH-to-123456",
-  nthToBankGroup: "NTH-to-123456-group",
-  bankToNTHGroup: "123456-to-NTH-group",
-  name: "New Bank Name",
-};
-```
-
-2. **Create Kafka Topics**: Topics are auto-created or can be pre-created
-3. **Deploy Consumer Groups**: Update consumer group configurations
-4. **Update Routing Logic**: Add bank-specific routing rules
-
-### Testing
-```bash
-# Send test message to bank topic
-docker exec kafka kafka-console-producer --bootstrap-server localhost:9092 --topic 456123-to-NTH
-
-# Consume messages from NTH topic
-docker exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic NTH-to-456123 --from-beginning
-```
-
-## 🔗 Integration
-
-### Bank API Integration
-Each participating bank must implement:
-- **Message Producer**: Publish to `{IIN}-to-NTH` topic
-- **Message Consumer**: Subscribe to `NTH-to-{IIN}` topic
-- **Transaction Handler**: Process incoming transaction messages
-- **Response Handler**: Send acknowledgments and status updates
-
-### Message Format
-```json
-{
-  "transactionId": "TXN123456789",
-  "sourceIIN": "456123",
-  "destinationIIN": "789456",
-  "amount": 1000.00,
-  "currency": "INR",
-  "timestamp": "2024-01-01T10:00:00Z",
-  "transactionType": "P2P",
-  "metadata": {}
+```typescript
+interface TransactionEvent {
+  txnId: string;
+  amount: number;
+  senderBank: string;
+  receiverBank: string;
+  senderAccount: string;
+  receiverAccount: string;
+  transactionType: 'UPI' | 'IMPS';
+  status: 'INITIATED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  timestamp: Date;
 }
 ```
 
-## 📚 Related Documentation
+## Routing Engine
 
-- **[SAMPARK Main Documentation](https://sampark.gitbook.io/sampark-docs/)**: Complete system overview
-- **[Bank Integration Guides](https://sampark.gitbook.io/sampark-docs/banks)**: Bank-specific implementation details
-- **[API Reference](https://sampark.gitbook.io/sampark-docs/api)**: Complete API documentation
+### Bank Registry
 
-## 🤝 Contributing
+The NTH maintains a registry of all participating banks:
 
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/new-feature`
-3. Commit changes: `git commit -am 'Add new feature'`
-4. Push branch: `git push origin feature/new-feature`
-5. Create Pull Request
+```typescript
+interface BankRegistry {
+  [bankCode: string]: {
+    iin: string;
+    ifscPrefix: string;
+    serviceUrl: string;
+    status: 'ACTIVE' | 'INACTIVE';
+    supportedServices: string[];
+  };
+}
+```
 
-## 📄 License
+### Routing Logic
 
-This project is part of the SAMPARK payment ecosystem. Please refer to the main project license for usage terms.
+#### VPA-based Routing (UPI)
+1. Parse VPA to extract bank identifier
+2. Lookup bank service from registry
+3. Route transaction to appropriate PSP
+4. Handle response and settlement
 
-## 🆘 Support
+#### IFSC-based Routing (IMPS)
+1. Extract bank code from IFSC
+2. Validate account details
+3. Route to destination bank
+4. Process settlement
 
-For technical support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Refer to the [SAMPARK Documentation](https://sampark.gitbook.io/sampark-docs/)
+## Settlement Engine
 
----
+### Settlement Process
 
-**NTH - Enabling seamless inter-bank transactions for the SAMPARK ecosystem** 🚀
+1. **Transaction Aggregation**: Collect completed transactions
+2. **Net Settlement Calculation**: Calculate net positions between banks
+3. **Settlement Instruction**: Generate settlement instructions
+4. **Confirmation**: Confirm settlement completion
+
+### Settlement Types
+
+- **Real-time**: Individual transaction settlement
+- **Batch**: Periodic batch settlement
+- **Net Settlement**: Net position settlement between banks
+
+## Redis Usage
+
+### Caching Strategy
+
+- **Transaction Cache**: Active transaction status
+- **Routing Cache**: Bank routing information
+- **Rate Limiting**: Transaction rate limiting per bank
+- **Session Management**: Temporary transaction data
+
+### Cache Keys Pattern
+
+```
+nth:transaction:{txnId}
+nth:routing:{bankCode}
+nth:ratelimit:{bankCode}:{timeWindow}
+nth:settlement:{settlementId}
+```
+
+## API Endpoints
+
+### Health Check
+```http
+GET /health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "kafka": "connected",
+    "redis": "connected"
+  },
+  "timestamp": "2025-01-01T00:00:00Z"
+}
+```
+
+### Transaction Status
+```http
+GET /api/v1/transaction/status/:txnId
+```
+
+Response:
+```json
+{
+  "txnId": "TXN123456789",
+  "status": "COMPLETED",
+  "amount": 1000,
+  "senderBank": "PVB",
+  "receiverBank": "BRG",
+  "timestamp": "2025-01-01T00:00:00Z"
+}
+```
+
+### Bank Registry
+```http
+GET /api/v1/banks
+```
+
+Response:
+```json
+{
+  "banks": [
+    {
+      "code": "PVB",
+      "name": "Paisa Vasool Bank",
+      "iin": "321987",
+      "ifscPrefix": "PVB",
+      "status": "ACTIVE"
+    },
+    {
+      "code": "BRG", 
+      "name": "Babu Rao Ganpatrao Bank",
+      "iin": "654321",
+      "ifscPrefix": "BRG",
+      "status": "ACTIVE"
+    }
+  ]
+}
+```
+
+## Message Processing Architecture
+
+### Event-Driven Processing
+
+The NTH operates on an event-driven architecture using Kafka:
+
+```typescript
+class NTHMessageProcessor {
+  async processTransactionRequest(event: TransactionEvent) {
+    // 1. Validate transaction
+    await this.validateTransaction(event);
+    
+    // 2. Route to destination bank
+    const routing = await this.getRoutingInfo(event.receiverBank);
+    
+    // 3. Process settlement
+    await this.processSettlement(event);
+    
+    // 4. Publish status update
+    await this.publishStatusUpdate(event);
+  }
+}
+```
+
+### Message Schemas
+
+#### Transaction Request Schema
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "txnId": {"type": "string"},
+    "amount": {"type": "number", "minimum": 0.01},
+    "senderVpa": {"type": "string"},
+    "receiverVpa": {"type": "string"},
+    "transactionType": {"enum": ["UPI", "IMPS"]},
+    "metadata": {"type": "object"}
+  },
+  "required": ["txnId", "amount", "transactionType"]
+}
+```
+
+## Error Handling & Resilience
+
+### Circuit Breaker Pattern
+
+The NTH implements circuit breakers for bank integrations:
+
+```typescript
+interface CircuitBreakerConfig {
+  failureThreshold: number;
+  recoveryTimeout: number;
+  monitoringPeriod: number;
+}
+```
+
+### Retry Mechanism
+
+Failed transactions are retried with exponential backoff:
+
+```typescript
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+  exponentialBase: number;
+}
+```
+
+### Error Response Format
+
+```json
+{
+  "status": "Error",
+  "code": "TRANSACTION_ROUTING_FAILED",
+  "message": "Unable to route transaction to destination bank",
+  "txnId": "TXN123456789",
+  "timestamp": "2025-01-01T00:00:00Z",
+  "details": {
+    "reason": "Destination bank service unavailable",
+    "retryAfter": 30
+  }
+}
+```
+
+## Performance & Scalability
+
+### Throughput Optimization
+
+- **Async Processing**: Non-blocking I/O for high throughput
+- **Connection Pooling**: Efficient resource utilization
+- **Message Batching**: Batch processing for high-volume transactions
+- **Load Balancing**: Horizontal scaling capabilities
+
+### Caching Strategy
+
+- **Hot Cache**: Frequently accessed routing information
+- **Write-Through**: Transaction status updates
+- **TTL Management**: Time-based cache expiration
+
+## Monitoring & Observability
+
+### Key Metrics
+
+- **Transaction Volume**: TPS (Transactions Per Second)
+- **Success Rate**: Transaction success percentage
+- **Latency**: Average/P95/P99 response times
+- **Error Rate**: Failed transaction percentage
+
+### Logging
+
+Structured logging for transaction traceability:
+
+```json
+{
+  "timestamp": "2025-01-01T00:00:00Z",
+  "level": "INFO",
+  "service": "nth-switch",
+  "txnId": "TXN123456789",
+  "event": "transaction_routed",
+  "senderBank": "PVB",
+  "receiverBank": "BRG",
+  "amount": 1000,
+  "processingTime": 150
+}
+```
+
+### Health Checks
+
+Comprehensive health monitoring:
+
+```typescript
+interface HealthStatus {
+  overall: 'healthy' | 'degraded' | 'unhealthy';
+  components: {
+    kafka: ComponentHealth;
+    redis: ComponentHealth;
+    database: ComponentHealth;
+    bankConnections: BankConnectionHealth[];
+  };
+  uptime: number;
+  version: string;
+}
+```
+
+## Development Setup
+
+### Local Development
+
+1. Clone and navigate to NTH directory:
+```bash
+cd nth
+```
+
+2. Install dependencies:
+```bash
+bun install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+4. Start dependencies (Kafka, Redis):
+```bash
+docker-compose up kafka redis-stack -d
+```
+
+5. Run seed data:
+```bash
+bun run seed
+```
+
+6. Start development server:
+```bash
+bun run dev
+```
+
+### Docker Development
+
+Start NTH service with dependencies:
+```bash
+docker-compose up nth-switch kafka redis-stack -d
+```
+
+View real-time logs:
+```bash
+docker-compose logs -f nth-switch
+```
+
+## Testing
+
+### Test Categories
+
+```bash
+# Unit tests
+bun test
+
+# Integration tests  
+bun test:integration
+
+# Load tests
+bun test:load
+
+# End-to-end tests
+bun test:e2e
+```
+
+### Mock Services
+
+For testing, mock bank services are available:
+
+```typescript
+class MockBankService {
+  async processTransaction(request: TransactionRequest): Promise<TransactionResponse> {
+    // Mock implementation for testing
+  }
+}
+```
+
+## Security
+
+### Transaction Security
+
+- **Message Signing**: Cryptographic message signing
+- **Replay Protection**: Nonce-based replay attack prevention  
+- **Input Validation**: Strict input sanitization
+- **Rate Limiting**: Per-bank transaction rate limits
+
+### Network Security
+
+- **TLS Encryption**: All inter-service communication encrypted
+- **Network Isolation**: Docker network segmentation
+- **Access Control**: Service-to-service authentication
+
+## Compliance & Auditing
+
+### Transaction Audit Trail
+
+Complete transaction logging for compliance:
+
+```typescript
+interface AuditLog {
+  txnId: string;
+  timestamp: Date;
+  event: string;
+  senderBank: string;
+  receiverBank: string;
+  amount: number;
+  status: string;
+  processingNode: string;
+}
+```
+
+### Regulatory Compliance
+
+- **Transaction Reporting**: Automated regulatory reporting
+- **Data Retention**: Configurable data retention policies
+- **Privacy Protection**: PII data handling compliance
+
+## Deployment
+
+### Production Deployment
+
+```bash
+# Build production image
+docker build -t nth-switch:latest .
+
+# Deploy with production configuration
+docker-compose -f docker-compose.prod.yml up -d nth-switch
+```
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nth-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nth-switch
+  template:
+    metadata:
+      labels:
+        app: nth-switch
+    spec:
+      containers:
+      - name: nth-switch
+        image: nth-switch:latest
+        ports:
+        - containerPort: 3000
+```
+
+## Configuration Management
+
+### Environment-based Configuration
+
+```typescript
+interface NTHConfig {
+  kafka: KafkaConfig;
+  redis: RedisConfig;
+  banks: BankConfig[];
+  settlement: SettlementConfig;
+  monitoring: MonitoringConfig;
+}
+```
+
+### Feature Flags
+
+Dynamic feature toggling:
+
+```typescript
+interface FeatureFlags {
+  enableBatchSettlement: boolean;
+  enableCircuitBreaker: boolean;
+  enableTransactionCaching: boolean;
+  maxTransactionAmount: number;
+}
+```
