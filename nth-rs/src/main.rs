@@ -1,19 +1,10 @@
-mod core;
 mod config;
-use config::banks::BANKS;
+mod core;
 
-use crate::core::{consumer, producer, structs};
+use crate::core::{admin, consumer};
 
 #[tokio::main]
 async fn main() {
-    let producer = core::producer::create();
-    producer::produce(structs::Transaction {
-        future_producer: producer,
-        key: String::from("Key-1"),
-        topic: String::from("topic1"),
-        data: String::from("Test data"),
-    })
-    .await;
-
-    consumer::start().await;
+    admin::create_topic_if_not_exists().await;
+    consumer::start_consumers().await;
 }

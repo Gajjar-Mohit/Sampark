@@ -12,7 +12,7 @@ pub struct Banks {
     #[serde(rename = "PVB")]
     pub pvb: Bank,
     #[serde(rename = "BRG")]
-    pub grg: Bank,
+    pub brg: Bank,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -20,6 +20,7 @@ pub struct Bank {
     pub ifsc_code_prefix: String,
     pub iin: String,
     pub nth_to_bank: String,
+    pub bank_to_nth: String,
     pub nth_to_bank_group: String,
     pub bank_to_nth_group: String,
     pub name: String,
