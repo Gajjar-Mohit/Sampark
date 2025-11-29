@@ -1,6 +1,8 @@
-use crate::core::{consumer, producer, structs};
-
 mod core;
+mod config;
+use config::banks::BANKS;
+
+use crate::core::{consumer, producer, structs};
 
 #[tokio::main]
 async fn main() {

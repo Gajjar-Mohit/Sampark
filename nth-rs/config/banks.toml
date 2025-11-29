@@ -1,0 +1,40 @@
+[CMK]
+ifsc_code_prefix: "CMK"
+iin: "456123"
+ifsc_code_prefix: "456123-to-NTH"
+nth_to_bank: "NTH-to-456123"
+nth_to_bank_group: "NTH-to-456123-group"
+bank_to_nth_group: "456123-to-NTH-group"
+name: "Chinta Mat Karo Bank"
+mmid_prefix: "0000"
+
+[CPB]
+ifsc_code_prefix: "CPB"
+iin: "789456"
+bank_to_nth: "789456-to-NTH"
+nth_to_bank: "NTH-to-789456"
+nth_to_bank_group: "NTH-to-789456-group"
+bank_to_nth_group: "789456-to-NTH-group"
+name: "Chai Pani Bank"
+mmid_prefix: "0001"
+
+[PVB]
+ifsc_code_prefix: "PVB"
+iin: "321987"
+bank_to_nth: "321987-to-NTH"
+nth_to_bank: "NTH-to-321987"
+nth_to_bank_group: "NTH-to-321987-group"
+bank_to_nth_group: "321987-to-NTH-group"
+name: "Paisa Vasool Bank"
+mmid_prefix: "0002"
+
+
+[BRG]
+ifsc_code_prefix: "BRG"
+iin: "654321"
+bank_to_nth: "654321-to-NTH"
+nth_to_bank: "NTH-to-654321"
+nth_to_bank_group: "NTH-to-654321-group
+bank_to_nth_group: "654321-to-NTH-group"
+name: "Babu Rao Ganpatrao Bank"
+mmid_prefix: "0003"
