@@ -4,11 +4,12 @@ use rdkafka::{
     producer::{FutureProducer, FutureRecord},
     util::Timeout,
 };
-use std::time::Duration;
+use std::{env, time::Duration};
 
 pub fn create() -> FutureProducer {
     let mut config = ClientConfig::new();
-    config.set("bootstrap.servers", "localhost:9092");
+    let kafka_brokers = env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:9092".to_string());
+    config.set("bootstrap.servers", &kafka_brokers);
     let producer: FutureProducer = config.create().expect("Failure in creating producer");
     producer
 }

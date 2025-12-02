@@ -1,6 +1,10 @@
+use std::env;
 use std::time::Duration;
 
-use crate::config::banks::{BANKS, Bank};
+use crate::{
+    config::banks::{BANKS, Bank},
+    core::processor::process_imcomming_request,
+};
 use rdkafka::{
     ClientConfig, Message,
     consumer::{CommitMode, Consumer, StreamConsumer},
@@ -8,7 +12,7 @@ use rdkafka::{
 
 async fn consume_banks(bank: Bank) {
     let consumer: StreamConsumer = listern_from_banks(bank.clone());
-    consume(consumer, bank.nth_to_bank.clone()).await;
+    consume(consumer, bank.bank_to_nth.clone()).await;
 }
 
 pub async fn start_consumers() {
@@ -24,8 +28,11 @@ pub async fn start_consumers() {
 fn listern_from_banks(bank: Bank) -> StreamConsumer {
     let mut config = ClientConfig::new();
 
+    // Use environment variable, default to localhost for local dev
+    let kafka_brokers = env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:9092".to_string());
+
     config
-        .set("bootstrap.servers", "localhost:9092")
+        .set("bootstrap.servers", &kafka_brokers)
         .set("auto.offset.reset", "earliest")
         .set("group.id", bank.bank_to_nth_group)
         .set("socket.timeout.ms", "4000");
@@ -54,11 +61,31 @@ async fn consume(consumer: StreamConsumer, topic: String) {
         match consumer.recv().await {
             Err(e) => println!("{:?}", e),
             Ok(message) => {
-                match message.payload_view::<str>() {
-                    None => println!("No Message"),
-                    Some(Ok(msg)) => println!("Message Recieved in {}: {}", topic.as_str(), msg),
-                    Some(Err(e)) => println!("Error Parsing: {}", e),
+                let key = match message.key_view::<str>() {
+                    None => None,
+                    Some(Ok(k)) => Some(k),
+                    Some(Err(e)) => {
+                        println!("Error parsing key: {}", e);
+                        None
+                    }
+                };
+
+                 let value = match message.payload_view::<str>() {
+                    None => {
+                        println!("No Message");
+                        None
+                    }
+                    Some(Ok(msg)) => Some(msg),
+                    Some(Err(e)) => {
+                        println!("Error Parsing value: {}", e);
+                        None
+                    }
+                };
+
+                if let Some(v) = value {
+                    process_imcomming_request(topic.as_str(), key, v);
                 }
+
                 consumer
                     .commit_message(&message, CommitMode::Async)
                     .unwrap();

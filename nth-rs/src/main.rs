@@ -1,5 +1,8 @@
+#![allow(warnings)]
 mod config;
 mod core;
+mod utils;
+mod types;
 
 use crate::core::{admin, consumer};
 

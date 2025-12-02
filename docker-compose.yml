@@ -25,8 +25,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -123,38 +123,38 @@ services:
     restart: unless-stopped
 
   # NTH Switch Service
-  nth-switch:
-    build:
-      context: ./nth
-      dockerfile: Dockerfile
-    container_name: nth-service
-    ports:
-      - "3005:3000"
-    environment:
-      NODE_ENV: production
-      KAFKA_BASEURL: kafka:9092
-      REDIS_URL: redis://redis-stack:6379
-      REDIS_HOST: redis-stack
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      REDIS_DB: 0
-      PORT: 3000
-    depends_on:
-      kafka:
-        condition: service_healthy
-      redis-stack:
-        condition: service_started
-    networks:
-      - kafka-network
-    volumes:
-      - ./nth/src:/usr/src/app/src:ro
-    command: >
-      sh -c "
-        echo 'Waiting for Redis to be ready...' &&
-        bun run seed &&
-        bun run src/index.ts
-      "
-    restart: unless-stopped
+  # nth-switch:
+  #   build:
+  #     context: ./nth
+  #     dockerfile: Dockerfile
+  #   container_name: nth-service
+  #   ports:
+  #     - "3005:3000"
+  #   environment:
+  #     NODE_ENV: production
+  #     KAFKA_BASEURL: kafka:9092
+  #     REDIS_URL: redis://redis-stack:6379
+  #     REDIS_HOST: redis-stack
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: ""
+  #     REDIS_DB: 0
+  #     PORT: 3000
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     redis-stack:
+  #       condition: service_started
+  #   networks:
+  #     - kafka-network
+  #   volumes:
+  #     - ./nth/src:/usr/src/app/src:ro
+  #   command: >
+  #     sh -c "
+  #       echo 'Waiting for Redis to be ready...' &&
+  #       bun run seed &&
+  #       bun run src/index.ts
+  #     "
+  #   restart: unless-stopped
 
   # Database Services
   babu-rao-ganpatrao-bank-db:
@@ -547,7 +547,7 @@ services:
   
 networks:
   kafka-network:
-    driver: bridge
+    external: true
   babu-rao-ganpatrao-bank-network:
     driver: bridge
   chai-pani-network:

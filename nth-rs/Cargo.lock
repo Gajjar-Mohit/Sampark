@@ -161,6 +161,7 @@ dependencies = [
  "once_cell",
  "rdkafka",
  "serde",
+ "serde_json",
  "tokio",
  "toml",
 ]

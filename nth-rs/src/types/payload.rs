@@ -1,0 +1,41 @@
+use serde::{Deserialize, Serialize};
+
+// #[derive(Serialize, Deserialize)]
+// pub struct Payload {
+//     pub txnId: String,
+//     pub amount: u64,
+//     pub remitterDetails: BankAccount,
+//     pub beneficiaryDetails: BankAccount
+// }
+
+// #[derive(Serialize, Deserialize)]
+// pub struct BankAccount {
+//     pub accountNo: u128,
+//     pub ifscCode: String,
+//     pub contactNo: u64,
+//     pub mmid: String,
+// }
+
+#[derive(Serialize, Deserialize)]
+pub struct Payload {
+    pub txnId: String,
+    pub amount: String,
+    pub remitterDetails: BankAccount,
+    pub beneficiaryDetails: BankAccount,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BankAccount {
+    pub accountNo: String,
+    pub ifscCode: String,
+    pub contactNo: String,
+    pub mmid: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AddBankAccount {
+    pub txnId: String,
+    pub contactNo: String,
+    pub ifscCode: String,
+    pub requestedBy: String,
+}

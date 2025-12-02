@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  nth-rs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nth-rs
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    external: true
