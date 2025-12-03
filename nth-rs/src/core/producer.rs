@@ -1,4 +1,4 @@
-use crate::core::structs;
+use crate::core::structs::{self, Transaction};
 use rdkafka::{
     ClientConfig,
     producer::{FutureProducer, FutureRecord},
@@ -22,6 +22,21 @@ pub async fn produce(transaction: structs::Transaction) {
     let status_delivery = transaction
         .future_producer
         .send(record, Timeout::After(Duration::from_secs(2)))
+        .await;
+
+    match status_delivery {
+        Ok(report) => println!("Message sent: {:?}", report),
+        Err(e) => println!("Error in producing.. {:?}", e),
+    }
+}
+
+pub async fn forward_to_bank(topic: &str, key: &str, payload: &str) {
+    println!("Inside forwarding");
+    let future_producer = create();
+    let record = FutureRecord::to(topic).payload(payload).key(key);
+
+    let status_delivery = future_producer
+        .send(record, Timeout::After((Duration::from_secs(2))))
         .await;
 
     match status_delivery {

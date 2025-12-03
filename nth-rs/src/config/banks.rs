@@ -34,6 +34,17 @@ impl Banks {
 
         toml::from_str(&content).map_err(|e| format!("Failed to parse banks config: {}", e))
     }
+    pub fn get_bank_by_code(&self, code: &str) -> Bank {
+        if code == "cmk" || code == "CMK" {
+            self.cmk.clone()
+        } else if code == "brg" || code == "BRG" {
+            self.brg.clone()
+        } else if code == "cpb" || code == "CPB" {
+            self.cpb.clone()
+        } else {
+            self.pvb.clone()
+        }
+    }
 }
 
 pub static BANKS: Lazy<Banks> =

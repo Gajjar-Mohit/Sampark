@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use crate::{
     config::banks::{BANKS, Bank},
-    core::processor::process_imcomming_request,
+    core::processor::processor::process_imcomming_request,
 };
 use rdkafka::{
     ClientConfig, Message,
@@ -70,7 +70,7 @@ async fn consume(consumer: StreamConsumer, topic: String) {
                     }
                 };
 
-                 let value = match message.payload_view::<str>() {
+                let value = match message.payload_view::<str>() {
                     None => {
                         println!("No Message");
                         None
@@ -83,7 +83,7 @@ async fn consume(consumer: StreamConsumer, topic: String) {
                 };
 
                 if let Some(v) = value {
-                    process_imcomming_request(topic.as_str(), key, v);
+                    process_imcomming_request(topic.as_str(), key, v).await;
                 }
 
                 consumer
