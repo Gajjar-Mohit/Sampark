@@ -8,7 +8,7 @@ use crate::{
 pub fn process_imcomming_request(topic: &str, key: Option<&str>, payload: &str) {
     match key {
         Some("imps-transfer") => process_imps_request(topic, payload),
-        Some("upi-add-bank-details") => process_upi_request(topic, payload),
+        Some("upi-add-bank-details") => process_upi_add_account_request(topic, payload),
         _ => (),
     }
 }
@@ -38,7 +38,21 @@ fn process_imps_request(topic: &str, payload: &str) {
     println!("--------------------------------------------------");
 }
 
-fn process_upi_request(topic: &str, payload: &str) {
+fn process_upi_add_account_request(topic: &str, payload: &str) {
+    println!("--------------------------------------------------");
+    println!("Processing UPI Add Account Request");
+    println!("Topic: {}", topic);
+    let parsed_payload: AddBankAccount = parse_upi_add_account_payload(payload);
+    println!("Parsed payload");
+    println!("TxnId: {}", parsed_payload.txnId);
+    println!(
+        "ContactNo: {}\n IFSCCODE: {}\n RequestedBy: {}",
+        parsed_payload.contactNo, parsed_payload.ifscCode, parsed_payload.requestedBy
+    );
+    println!("--------------------------------------------------");
+}
+
+fn process_upi_transfer_request(topic: &str, payload: &str) {
     println!("--------------------------------------------------");
     println!("Processing UPI Request");
     println!("Topic: {}", topic);
