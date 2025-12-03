@@ -6,10 +6,10 @@ use crate::{
 
 pub async fn process_imcomming_request(topic: &str, key: Option<&str>, payload: &str) {
     match key {
-        Some("imps-transfer") => {
+        Some(k) if k.contains("imps") => {
             process_imps_request(topic, key.unwrap(), payload).await;
         }
-        Some("upi-add-bank-details") => {
+        Some(k) if k.contains("upi") => {
             process_upi_add_account_request(topic, payload);
         }
         _ => {}

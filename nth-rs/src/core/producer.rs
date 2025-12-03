@@ -43,4 +43,5 @@ pub async fn forward_to_bank(topic: &str, key: &str, payload: &str) {
         Ok(report) => println!("Message sent: {:?}", report),
         Err(e) => println!("Error in producing.. {:?}", e),
     }
+    return;
 }

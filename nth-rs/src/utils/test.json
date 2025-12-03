@@ -1,6 +1,14 @@
 {
-  "txnId": "TXN042512020605486",
-  "contactNo": "9123456789",
-  "ifscCode": "BRG30647402",
-  "requestedBy": "NTH-to-321987"
+  "id": "c32a7a85-3342-4283-b7b6-16ac7092d260",
+  "balance": 2975,
+  "accountNo": "902388310304",
+  "accountHolderName": "Suman Reddy",
+  "accountHolderContactNo": "8234567890",
+  "ifscCode": "CMK16620329",
+  "mmid": "0000520",
+  "branchName": "Sab Theek Hai Colony Branch",
+  "panCardNo": "FGHIJ5678K",
+  "createdAt": "2025-12-01T11:53:44.790Z",
+  "updatedAt": "2025-12-01T11:58:30.530Z",
+  "txnId": "TXN012512031033722"
 }
