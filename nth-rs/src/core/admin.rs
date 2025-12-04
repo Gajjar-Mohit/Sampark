@@ -39,17 +39,21 @@ pub async fn create_topic_if_not_exists() {
         Ok(results) => {
             for result in results {
                 match result {
-                    Ok(topic) => println!("Created topic: {}", topic),
+                    Ok(topic) => {
+                        //println!("Created topic: {}", topic)
+                    }
                     Err((topic, e)) => {
                         if e.to_string().contains("already exists") {
-                            println!("Topic {} already exists", topic)
+                            // println!("Topic {} already exists", topic)
                         } else {
-                            eprintln!("Failed to create topic: {}: {}", topic, e)
+                            // eprintln!("Failed to create topic: {}: {}", topic, e)
                         }
                     }
                 }
             }
         }
-        Err(e) => println!("Failed to create topics: {}", e),
+        Err(e) => {
+            //println!("Failed to create topics: {}", e)
+        }
     }
 }

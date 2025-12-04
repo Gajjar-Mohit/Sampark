@@ -18,7 +18,7 @@ async fn consume_banks(bank: Bank, producer: FutureProducer, redis_con: Multiple
 }
 
 pub async fn start_consumers(producer: FutureProducer, redis_con: MultiplexedConnection) {
-    print!("Starting all bank consumers.\n");
+    // print!("Starting all bank consumers.\n");
     tokio::join!(
         consume_banks(BANKS.cmk.clone(), producer.clone(), redis_con.clone()),
         consume_banks(BANKS.cpb.clone(), producer.clone(), redis_con.clone()),
@@ -30,7 +30,6 @@ pub async fn start_consumers(producer: FutureProducer, redis_con: MultiplexedCon
 fn listern_from_banks(bank: Bank) -> StreamConsumer {
     let mut config = ClientConfig::new();
 
-    
     let kafka_brokers = env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:9092".to_string());
 
     config
@@ -56,35 +55,37 @@ async fn consume(
 
     match consumer.fetch_metadata(None, Duration::from_secs(5)) {
         Ok(metadata) => {
-            println!("Topic: {}", topic.as_str());
-            println!("Brokers: {}", metadata.brokers().len());
+            // println!("Topic: {}", topic.as_str());
+            // println!("Brokers: {}", metadata.brokers().len());
         }
         Err(e) => {
-            println!("Errors: {}", e)
+            // println!("Errors: {}", e)
         }
     }
 
     loop {
         match consumer.recv().await {
-            Err(e) => println!("{:?}", e),
+            Err(e) => {
+                //println!("{:?}", e)
+            }
             Ok(message) => {
                 let key = match message.key_view::<str>() {
                     None => None,
                     Some(Ok(k)) => Some(k),
                     Some(Err(e)) => {
-                        println!("Error parsing key: {}", e);
+                       // println!("Error parsing key: {}", e);
                         None
                     }
                 };
 
                 let value = match message.payload_view::<str>() {
                     None => {
-                        println!("No Message");
+                        // println!("No Message");
                         None
                     }
                     Some(Ok(msg)) => Some(msg),
                     Some(Err(e)) => {
-                        println!("Error Parsing value: {}", e);
+                        // println!("Error Parsing value: {}", e);
                         None
                     }
                 };

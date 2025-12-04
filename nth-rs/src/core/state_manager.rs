@@ -29,9 +29,9 @@ pub async fn save_intermidiate_step(
     step: &str,
     processor: &str,
 ) {
-    println!("Saving intermidiate step");
+    // println!("Saving intermidiate step");
     if txn_id.is_empty() {
-        println!("Transaction Id is missing");
+        // println!("Transaction Id is missing");
         return;
     }
     let existing_state = get(con, txn_id).await;
@@ -67,7 +67,7 @@ pub async fn save_intermidiate_step(
                 set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
-                println!("Failed to parse existing state JSON: {}", e);
+                // println!("Failed to parse existing state JSON: {}", e);
             }
         }
     } else {
@@ -94,7 +94,7 @@ pub async fn save_remitter(
     remitter: &BankAccount,
     con: &mut MultiplexedConnection,
 ) {
-    println!("Saving remitter details");
+    // println!("Saving remitter details");
 
     if txn_id.is_empty() {
         println!("Transaction Id is missing");
@@ -118,7 +118,7 @@ pub async fn save_remitter(
                 set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
-                println!("Failed to parse existing state JSON: {}", e);
+                // println!("Failed to parse existing state JSON: {}", e);
             }
         }
     } else {
@@ -140,10 +140,10 @@ pub async fn save_benificary(
     benificary: &BankAccount,
     con: &mut MultiplexedConnection,
 ) {
-    println!("Saving benificary details");
+    // println!("Saving benificary details");
 
     if txn_id.is_empty() {
-        println!("Transaction Id is missing");
+        // println!("Transaction Id is missing");
         return;
     }
     let existing_state = get(con, txn_id).await;
@@ -165,7 +165,7 @@ pub async fn save_benificary(
                 set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
-                println!("Failed to parse existing state JSON: {}", e);
+                // println!("Failed to parse existing state JSON: {}", e);
             }
         }
     } else {
@@ -191,7 +191,7 @@ pub async fn get_saved_state(txn_id: &str, con: &mut MultiplexedConnection) -> T
         }
         Err(e) => {
             
-            eprintln!("Error fetching state for {}: {}", txn_id, e);
+            // eprintln!("Error fetching state for {}: {}", txn_id, e);
             String::new()
         }
     };

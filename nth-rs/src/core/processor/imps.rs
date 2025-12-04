@@ -7,14 +7,9 @@ use serde_json::{Value, json};
 use crate::{
     config::banks::BANKS,
     core::{
-        
-        
-        
         producer::forward_to_bank,
         state_manager::{get_saved_state, save_benificary, save_intermidiate_step, save_remitter},
     },
-    
-    
     types::payload::{self, BankAccount, Payload, TransactionState},
     utils::{
         imps_flow::imps_flow,
@@ -27,21 +22,19 @@ pub async fn process_imps_request(
     key: &str,
     payload: &str,
     producer: &FutureProducer,
-    redis_con: &mut MultiplexedConnection, 
+    redis_con: &mut MultiplexedConnection,
 ) {
-    println!("--------------------------------------------------");
-    println!("Processing IMPS Request | Topic: {} | Key: {}", topic, key);
-    println!("--------------------------------------------------");
+    // println!("--------------------------------------------------");
+    // println!("Processing IMPS Request | Topic: {} | Key: {}", topic, key);
+    // println!("--------------------------------------------------");
 
     for state in imps_flow.iter() {
         if state.key == key {
             let txn_id_res: Result<serde_json::Value, _> = serde_json::from_str(payload);
 
-            
             if let Ok(txn_json) = txn_id_res {
                 let txn_id_str = txn_json["txnId"].as_str().unwrap_or_default();
 
-                
                 save_intermidiate_step(redis_con, txn_id_str, &state.step, topic).await;
             }
 
@@ -74,14 +67,14 @@ async fn verify_bank_details(
         && payload_struct.beneficiaryDetails.mmid.is_empty()
     {
         let error_value = "Missing account no or mmid";
-        print!("{}", error_value);
+        // print!("{}", error_value);
         forward_to_bank(topic, error_key, error_value, producer).await;
         return;
     }
 
     if payload_struct.amount.is_empty() {
         let error_value = "Missing amount";
-        print!("{}", error_value);
+        // print!("{}", error_value);
         forward_to_bank(topic, error_key, error_value, producer).await;
         return;
     }
@@ -89,7 +82,6 @@ async fn verify_bank_details(
     if !payload_struct.beneficiaryDetails.accountNo.is_empty()
         && !payload_struct.beneficiaryDetails.ifscCode.is_empty()
     {
-        
         save_remitter(
             &payload_struct.txnId,
             payload_struct.amount.parse().unwrap(),
@@ -124,7 +116,7 @@ async fn debit_remitter(
     producer: &FutureProducer,
     redis_con: &mut MultiplexedConnection,
 ) {
-    println!("Debitting remitter");
+    // println!("Debitting remitter");
     let parsed_payload = parse_verified_beneficary(payload);
     let benificary: BankAccount = BankAccount {
         accountNo: parsed_payload.accountNo,
@@ -133,18 +125,16 @@ async fn debit_remitter(
         mmid: parsed_payload.mmid,
     };
 
-    
     save_benificary(&parsed_payload.txnId, &benificary, redis_con).await;
 
-    
     let saved_state: TransactionState = get_saved_state(&parsed_payload.txnId, redis_con).await;
 
     let new_key = "imps-transfer-debit-remitter";
-    
+
     let bank_code = if saved_state.remitter.ifscCode.len() >= 3 {
         &saved_state.remitter.ifscCode[0..3]
     } else {
-        "CMK" 
+        "CMK"
     };
 
     let remitter_bank = BANKS.get_bank_by_code(bank_code);
@@ -171,13 +161,12 @@ async fn credit_beneficiary(
     producer: &FutureProducer,
     redis_con: &mut MultiplexedConnection,
 ) {
-    println!("Credit beneficiary");
+    // println!("Credit beneficiary");
     let parsed_payload: Value = serde_json::from_str(payload).unwrap();
     let txnid = parsed_payload["txnId"]
         .as_str()
         .expect("txnId must be a string");
 
-    
     let saved_state: TransactionState = get_saved_state(txnid, redis_con).await;
 
     let new_key = "imps-transfer-credit-beneficiary";
@@ -210,13 +199,12 @@ async fn transaction_complete(
     producer: &FutureProducer,
     redis_con: &mut MultiplexedConnection,
 ) {
-    println!("Transaction complete");
+    // println!("Transaction complete");
     let parsed_payload: Value = serde_json::from_str(payload).unwrap();
     let txnid = parsed_payload["txnId"]
         .as_str()
         .expect("txnId must be a string");
 
-    
     let saved_state: TransactionState = get_saved_state(txnid, redis_con).await;
 
     let new_key = "imps-transfer-complete";

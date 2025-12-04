@@ -15,13 +15,8 @@ pub fn create() -> FutureProducer {
     producer
 }
 
-pub async fn forward_to_bank(
-    topic: &str,
-    key: &str,
-    payload: &str,
-    producer: &FutureProducer
-) {
-    println!("Inside forwarding");
+pub async fn forward_to_bank(topic: &str, key: &str, payload: &str, producer: &FutureProducer) {
+    // println!("Inside forwarding");
     let record = FutureRecord::to(topic).payload(payload).key(key);
 
     let status_delivery = producer
@@ -29,8 +24,12 @@ pub async fn forward_to_bank(
         .await;
 
     match status_delivery {
-        Ok(report) => println!("Message sent: {:?}", report),
-        Err(e) => println!("Error in producing.. {:?}", e),
+        Ok(report) => {
+            // println!("Message sent: {:?}", report)
+        }
+        Err(e) => {
+            // println!("Error in producing.. {:?}", e)
+        }
     }
     return;
 }
