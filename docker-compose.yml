@@ -156,6 +156,18 @@ services:
   #     "
   #   restart: unless-stopped
 
+  # nth-rs:
+  #   build:
+  #     context: ./nth-rs
+  #     dockerfile: Dockerfile
+  #   container_name: nth-rs
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BROKERS: kafka:9092
+  #   networks:
+  #     - kafka-network
+
   # Database Services
   babu-rao-ganpatrao-bank-db:
     image: postgres:15-alpine

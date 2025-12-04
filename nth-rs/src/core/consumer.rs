@@ -8,27 +8,29 @@ use crate::{
 use rdkafka::{
     ClientConfig, Message,
     consumer::{CommitMode, Consumer, StreamConsumer},
+    producer::FutureProducer,
 };
+use redis::aio::MultiplexedConnection;
 
-async fn consume_banks(bank: Bank) {
+async fn consume_banks(bank: Bank, producer: FutureProducer, redis_con: MultiplexedConnection) {
     let consumer: StreamConsumer = listern_from_banks(bank.clone());
-    consume(consumer, bank.bank_to_nth.clone()).await;
+    consume(consumer, bank.bank_to_nth.clone(), producer, redis_con).await;
 }
 
-pub async fn start_consumers() {
+pub async fn start_consumers(producer: FutureProducer, redis_con: MultiplexedConnection) {
     print!("Starting all bank consumers.\n");
     tokio::join!(
-        consume_banks(BANKS.cmk.clone()),
-        consume_banks(BANKS.cpb.clone()),
-        consume_banks(BANKS.pvb.clone()),
-        consume_banks(BANKS.brg.clone())
+        consume_banks(BANKS.cmk.clone(), producer.clone(), redis_con.clone()),
+        consume_banks(BANKS.cpb.clone(), producer.clone(), redis_con.clone()),
+        consume_banks(BANKS.pvb.clone(), producer.clone(), redis_con.clone()),
+        consume_banks(BANKS.brg.clone(), producer.clone(), redis_con.clone())
     );
 }
 
 fn listern_from_banks(bank: Bank) -> StreamConsumer {
     let mut config = ClientConfig::new();
 
-    // Use environment variable, default to localhost for local dev
+    
     let kafka_brokers = env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:9092".to_string());
 
     config
@@ -42,7 +44,12 @@ fn listern_from_banks(bank: Bank) -> StreamConsumer {
     consumer
 }
 
-async fn consume(consumer: StreamConsumer, topic: String) {
+async fn consume(
+    consumer: StreamConsumer,
+    topic: String,
+    producer: FutureProducer,
+    mut redis_con: MultiplexedConnection,
+) {
     consumer
         .subscribe(&[topic.as_str()])
         .expect("Can't subscribe");
@@ -83,7 +90,14 @@ async fn consume(consumer: StreamConsumer, topic: String) {
                 };
 
                 if let Some(v) = value {
-                    process_imcomming_request(topic.as_str(), key, v).await;
+                    process_imcomming_request(
+                        topic.as_str(),
+                        key,
+                        v,
+                        producer.clone(),
+                        redis_con.clone(),
+                    )
+                    .await;
                 }
 
                 consumer

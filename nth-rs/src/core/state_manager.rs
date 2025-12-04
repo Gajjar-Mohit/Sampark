@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use redis::{Client, Commands, RedisResult};
+use redis::{AsyncCommands, RedisResult, aio::MultiplexedConnection};
 use serde_json::{Number, json};
 
 use crate::{
@@ -11,39 +11,40 @@ use crate::{
     utils::{imps_flow::Step, parser::parse_state},
 };
 
-fn connect() -> Client {
-    let mut client = Client::open("redis://redis-stack:6379/").unwrap();
-    client
+async fn get(con: &mut MultiplexedConnection, key: &str) -> RedisResult<String> {
+    con.get(key).await
 }
 
-fn set(key: &str, value: &str) {
-    let mut client = connect();
-    let _: () = client.set(key, value).expect("Failed to set value");
+
+async fn set(con: &mut MultiplexedConnection, key: &str, value: &str) {
+    let _: () = con
+        .set(key, value)
+        .await
+        .unwrap_or_else(|e| println!("Redis Set Error: {}", e));
 }
 
-fn get(key: &str) -> RedisResult<String> {
-    let mut client = connect();
-    let value: String = client.get(key)?;
-    Ok(value)
-}
-
-pub fn save_intermidiate_step(txn_id: &str, step: &str, processor: &str) {
+pub async fn save_intermidiate_step(
+    con: &mut MultiplexedConnection,
+    txn_id: &str,
+    step: &str,
+    processor: &str,
+) {
     println!("Saving intermidiate step");
     if txn_id.is_empty() {
         println!("Transaction Id is missing");
         return;
     }
-    let existing_state = get(txn_id);
+    let existing_state = get(con, txn_id).await;
     let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_millis()
         .to_string();
     if let Ok(val) = existing_state {
-        // println!("Existing state value: {:?}", val);
+        
         match serde_json::from_str::<serde_json::Value>(&val) {
             Ok(parsed) => {
-                // println!("Parsed existing state JSON: {:?}", parsed);
+                
                 let mut parsed = parsed;
                 let new_entry = json!({
                     "step": step,
@@ -62,8 +63,8 @@ pub fn save_intermidiate_step(txn_id: &str, step: &str, processor: &str) {
                 } else {
                     parsed["processing_history"] = json!([new_entry]);
                 }
-                // persist updated transaction JSON
-                set(txn_id, &parsed.to_string());
+                
+                set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
                 println!("Failed to parse existing state JSON: {}", e);
@@ -82,24 +83,29 @@ pub fn save_intermidiate_step(txn_id: &str, step: &str, processor: &str) {
             }]
         });
 
-        // persist the new transaction as a JSON string
-        set(txn_id, &new_transaction.to_string());
+        
+        set(con, txn_id, &new_transaction.to_string()).await;
     }
 }
 
-pub fn save_remitter(txn_id: &str, amount: Number, remitter: &BankAccount) {
+pub async fn save_remitter(
+    txn_id: &str,
+    amount: Number,
+    remitter: &BankAccount,
+    con: &mut MultiplexedConnection,
+) {
     println!("Saving remitter details");
 
     if txn_id.is_empty() {
         println!("Transaction Id is missing");
         return;
     }
-    let existing_state = get(txn_id);
+    let existing_state = get(con, txn_id).await;
     if let Ok(val) = existing_state {
-        // println!("Existing state value: {:?}", val);
+        
         match serde_json::from_str::<serde_json::Value>(&val) {
             Ok(parsed) => {
-                // println!("Parsed existing state JSON: {:?}", parsed);
+                
                 let mut parsed = parsed;
 
                 if parsed.get("remitter").and_then(|v| v.as_object()).is_some() {
@@ -108,8 +114,8 @@ pub fn save_remitter(txn_id: &str, amount: Number, remitter: &BankAccount) {
                 if parsed.get("amount").and_then(|v| v.as_number()).is_some() {
                     parsed["amount"] = json!(amount);
                 }
-                // persist updated transaction JSON
-                set(txn_id, &parsed.to_string());
+                
+                set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
                 println!("Failed to parse existing state JSON: {}", e);
@@ -124,24 +130,28 @@ pub fn save_remitter(txn_id: &str, amount: Number, remitter: &BankAccount) {
             "processing_history": []
         });
 
-        // persist the new transaction as a JSON string
-        set(txn_id, &new_transaction.to_string());
+        
+        set(con, txn_id, &new_transaction.to_string()).await;
     }
 }
 
-pub fn save_benificary(txn_id: &str, benificary: &BankAccount) {
+pub async fn save_benificary(
+    txn_id: &str,
+    benificary: &BankAccount,
+    con: &mut MultiplexedConnection,
+) {
     println!("Saving benificary details");
 
     if txn_id.is_empty() {
         println!("Transaction Id is missing");
         return;
     }
-    let existing_state = get(txn_id);
+    let existing_state = get(con, txn_id).await;
     if let Ok(val) = existing_state {
-        // println!("Existing state value: {:?}", val);
+        
         match serde_json::from_str::<serde_json::Value>(&val) {
             Ok(parsed) => {
-                // println!("Parsed existing state JSON: {:?}", parsed);
+                
                 let mut parsed = parsed;
 
                 if parsed
@@ -151,8 +161,8 @@ pub fn save_benificary(txn_id: &str, benificary: &BankAccount) {
                 {
                     parsed["benificary"] = json!(benificary)
                 }
-                // persist updated transaction JSON
-                set(txn_id, &parsed.to_string());
+                
+                set(con, txn_id, &parsed.to_string()).await;
             }
             Err(e) => {
                 println!("Failed to parse existing state JSON: {}", e);
@@ -167,20 +177,25 @@ pub fn save_benificary(txn_id: &str, benificary: &BankAccount) {
             "processing_history": []
         });
 
-        // persist the new transaction as a JSON string
-        set(txn_id, &new_transaction.to_string());
+        
+        set(con, txn_id, &new_transaction.to_string()).await;
     }
 }
 
-pub fn get_saved_state(txn_id: &str) -> TransactionState {
-    let result = get(txn_id);
-    let mut value: String = String::new();
-    match result {
-        Ok(val) => value = val,
-        Err(e) => {
-            println!("Error getting saved state: {}", e)
+pub async fn get_saved_state(txn_id: &str, con: &mut MultiplexedConnection) -> TransactionState {
+    let value: String = match con.get(txn_id).await {
+        Ok(Some(v)) => v,
+        Ok(None) => {
+            
+            String::new()
         }
-    }
-    let parsed_state = parse_state(&value);
-    parsed_state
+        Err(e) => {
+            
+            eprintln!("Error fetching state for {}: {}", txn_id, e);
+            String::new()
+        }
+    };
+
+    
+    parse_state(&value)
 }

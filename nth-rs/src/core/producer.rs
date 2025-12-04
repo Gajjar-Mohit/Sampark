@@ -4,6 +4,7 @@ use rdkafka::{
     producer::{FutureProducer, FutureRecord},
     util::Timeout,
 };
+use redis::aio::MultiplexedConnection;
 use std::{env, time::Duration};
 
 pub fn create() -> FutureProducer {
@@ -14,28 +15,16 @@ pub fn create() -> FutureProducer {
     producer
 }
 
-pub async fn produce(transaction: structs::Transaction) {
-    let record = FutureRecord::to(transaction.topic.as_str())
-        .payload(transaction.data.as_str())
-        .key(transaction.key.as_str());
-
-    let status_delivery = transaction
-        .future_producer
-        .send(record, Timeout::After(Duration::from_secs(2)))
-        .await;
-
-    match status_delivery {
-        Ok(report) => println!("Message sent: {:?}", report),
-        Err(e) => println!("Error in producing.. {:?}", e),
-    }
-}
-
-pub async fn forward_to_bank(topic: &str, key: &str, payload: &str) {
+pub async fn forward_to_bank(
+    topic: &str,
+    key: &str,
+    payload: &str,
+    producer: &FutureProducer
+) {
     println!("Inside forwarding");
-    let future_producer = create();
     let record = FutureRecord::to(topic).payload(payload).key(key);
 
-    let status_delivery = future_producer
+    let status_delivery = producer
         .send(record, Timeout::After((Duration::from_secs(2))))
         .await;
 
