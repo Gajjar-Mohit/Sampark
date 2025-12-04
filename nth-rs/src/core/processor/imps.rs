@@ -4,7 +4,7 @@ use serde_json::json;
 
 use crate::{
     config::banks::BANKS,
-    core::producer::forward_to_bank,
+    core::{producer::forward_to_bank, state_manager::save_intermidiate_step},
     types::payload::{self, BankAccount, Payload},
     utils::{
         imps_flow::imps_flow,
@@ -37,6 +37,13 @@ pub async fn process_imps_request(topic: &str, key: &str, payload: &str) {
     println!("--------------------------------------------------");
     for state in imps_flow.iter() {
         if state.key == key {
+            let txn_id: serde_json::Value =
+                serde_json::from_str(payload).expect("Failed to parse txnid");
+            save_intermidiate_step(
+                txn_id["txnId"].as_str().unwrap_or_default(),
+                &state.step,
+                topic,
+            );
             if key == "imps-transfer" {
                 verify_bank_details(topic, key, payload).await;
             } else if key == "imps-transfer-error" {

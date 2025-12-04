@@ -4,7 +4,7 @@ mod core;
 mod utils;
 mod types;
 
-use crate::core::{admin, consumer, state_manager::sync_connection};
+use crate::core::{admin, consumer};
 
 #[tokio::main]
 async fn main() {

@@ -54,3 +54,15 @@ pub struct VerifiedBankAccount {
     pub updatedAt: String,
     pub txnId: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct TransactionState {
+    processing_history: Vec<State>,
+    txn_id: String
+}
+#[derive(Serialize, Deserialize)]
+pub struct State {
+    processor: String,
+    step: String,
+    time_stamp: String,
+}
