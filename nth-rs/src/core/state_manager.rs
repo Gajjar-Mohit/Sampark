@@ -4,7 +4,7 @@ use std::{
 };
 
 use redis::{Client, Commands, RedisResult};
-use serde_json::json;
+use serde_json::{Number, json};
 
 use crate::{
     types::payload::{BankAccount, State, TransactionState},
@@ -87,7 +87,7 @@ pub fn save_intermidiate_step(txn_id: &str, step: &str, processor: &str) {
     }
 }
 
-pub fn save_remitter(txn_id: &str, amount: &str, remitter: &BankAccount) {
+pub fn save_remitter(txn_id: &str, amount: Number, remitter: &BankAccount) {
     println!("Saving remitter details");
 
     if txn_id.is_empty() {
@@ -120,7 +120,7 @@ pub fn save_remitter(txn_id: &str, amount: &str, remitter: &BankAccount) {
             "txn_id": txn_id,
             "remitter": json!(remitter),
             "benificary": {},
-            "amount": 0,
+            "amount": amount,
             "processing_history": []
         });
 
@@ -181,7 +181,6 @@ pub fn get_saved_state(txn_id: &str) -> TransactionState {
             println!("Error getting saved state: {}", e)
         }
     }
-
     let parsed_state = parse_state(&value);
     parsed_state
 }

@@ -1,6 +1,6 @@
 use std::{ptr::null, thread::panicking};
 
-use serde_json::json;
+use serde_json::{Value, json};
 
 use crate::{
     config::banks::BANKS,
@@ -85,7 +85,7 @@ async fn verify_bank_details(topic: &str, key: &str, payload: &str) {
     {
         save_remitter(
             &payload.txnId,
-            &payload.amount.as_str(),
+            payload.amount.parse().unwrap(),
             &payload.remitterDetails,
         );
 
@@ -122,9 +122,46 @@ async fn debit_remitter(topic: &str, key: &str, payload: &str) {
     };
     save_benificary(&parsed_payload.txnId, &benificary);
     let saved_state: TransactionState = get_saved_state(&parsed_payload.txnId);
-    println!("Got the saved state: {}", saved_state.txn_id)
+    let new_key = "imps-transfer-debit-remitter";
+    let remitter_bank = BANKS.get_bank_by_code(&saved_state.remitter.ifscCode[0..3]);
+    let prepaired_payload = json!({
+        "remitterDetails": saved_state.remitter,
+          "beneficiaryDetails": benificary,
+          "txnId": saved_state.txn_id,
+          "amount": saved_state.amount,
+    });
+    let stringify_payload = serde_json::to_string_pretty(&prepaired_payload).unwrap();
+    forward_to_bank(&remitter_bank.nth_to_bank, new_key, &stringify_payload).await;
 }
 
-async fn credit_beneficiary(topic: &str, key: &str, payload: &str) {}
+async fn credit_beneficiary(topic: &str, key: &str, payload: &str) {
+    println!("Credit beneficiary");
+    let parsed_payload: Value = serde_json::from_str(&payload).unwrap();
+    let txnid = parsed_payload["txnId"]
+        .as_str()
+        .expect("txnId must be a string");
+    let saved_state: TransactionState = get_saved_state(txnid);
+    let new_key = "imps-transfer-credit-beneficiary";
+    let benificary_bank = BANKS.get_bank_by_code(&saved_state.benificary.ifscCode[0..3]);
+    let prepaired_payload = json!({
+        "remitterDetails": saved_state.remitter,
+          "beneficiaryDetails": saved_state.benificary,
+          "txnId": saved_state.txn_id,
+          "amount": saved_state.amount,
+    });
+    let stringify_payload = serde_json::to_string_pretty(&prepaired_payload).unwrap();
+    // println!("Payload: {}", stringify_payload);
+    forward_to_bank(&benificary_bank.nth_to_bank, new_key, &stringify_payload).await;
+}
 
-async fn transaction_complete(topic: &str, key: &str, payload: &str) {}
+async fn transaction_complete(topic: &str, key: &str, payload: &str) {
+    println!("Transaction complete");
+    let parsed_payload: Value = serde_json::from_str(&payload).unwrap();
+    let txnid = parsed_payload["txnId"]
+        .as_str()
+        .expect("txnId must be a string");
+    let saved_state: TransactionState = get_saved_state(txnid);
+    let new_key = "imps-transfer-complete";
+    let remitter_bank = BANKS.get_bank_by_code(&saved_state.remitter.ifscCode[0..3]);
+    forward_to_bank(&remitter_bank.nth_to_bank, new_key, &payload).await;
+}

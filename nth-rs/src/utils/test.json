@@ -1,5 +1,5 @@
 {
-  "amount": "2",
+  "amount": 2,
   "benificary": {
     "accountNo": "902388310304",
     "contactNo": "8234567890",
@@ -10,12 +10,22 @@
     {
       "processor": "654321-to-NTH",
       "step": "TRANSACTION_INITIATED",
-      "time_stamp": "1764824695543"
+      "time_stamp": "1764832203142"
     },
     {
       "processor": "456123-to-NTH",
       "step": "VALIDATION_OF_BENEFICIARY_COMPLETE",
-      "time_stamp": "1764824695653"
+      "time_stamp": "1764832203258"
+    },
+    {
+      "processor": "654321-to-NTH",
+      "step": "DEBIT_REMITTER_COMPLETE",
+      "time_stamp": "1764832203369"
+    },
+    {
+      "processor": "456123-to-NTH",
+      "step": "CREDIT_BENEFICIARY_COMPLETE",
+      "time_stamp": "1764832203480"
     }
   ],
   "remitter": {
@@ -24,5 +34,5 @@
     "ifscCode": "BRG30647402",
     "mmid": ""
   },
-  "txn_id": "TXN012512040504113"
+  "txn_id": "TXN012512040710939"
 }

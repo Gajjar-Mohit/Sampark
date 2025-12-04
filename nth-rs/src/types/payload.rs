@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Number;
 
 // #[derive(Serialize, Deserialize)]
 // pub struct Payload {
@@ -57,11 +58,11 @@ pub struct VerifiedBankAccount {
 
 #[derive(Serialize, Deserialize)]
 pub struct TransactionState {
-    pub processing_history: Vec<State>,
-    pub txn_id: String,
+    pub amount: Number,
     pub benificary: BankAccount,
+    pub processing_history: Vec<State>,
     pub remitter: BankAccount,
-    pub amount: String,
+    pub txn_id: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct State {

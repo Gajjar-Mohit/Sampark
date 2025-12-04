@@ -19,6 +19,18 @@ pub fn parse_verified_beneficary(payload: &str) -> VerifiedBankAccount {
 }
 
 pub fn parse_state(payload: &str) -> TransactionState {
-    let v: TransactionState = serde_json::from_str(payload).unwrap();
-    v
+    if payload.trim().is_empty() {
+        eprintln!("ERROR: Empty payload received");
+        panic!("Cannot parse empty payload");
+    }
+    
+    match serde_json::from_str(payload) {
+        Ok(state) => state,
+        Err(e) => {
+            eprintln!("ERROR: Failed to parse JSON");
+            eprintln!("Payload: {}", payload);
+            eprintln!("Error: {}", e);
+            panic!("Invalid JSON for TransactionState");
+        }
+    }
 }
