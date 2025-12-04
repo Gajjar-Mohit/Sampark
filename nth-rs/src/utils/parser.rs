@@ -18,7 +18,7 @@ pub fn parse_verified_beneficary(payload: &str) -> VerifiedBankAccount {
     v
 }
 
-pub fn parse_intermidiate_step(payload: Value) -> TransactionState {
-    let v: TransactionState = serde_json::from_value(payload).unwrap();
+pub fn parse_state(payload: &str) -> TransactionState {
+    let v: TransactionState = serde_json::from_str(payload).unwrap();
     v
 }

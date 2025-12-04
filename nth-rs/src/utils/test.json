@@ -1,15 +1,28 @@
 {
+  "amount": "2",
+  "benificary": {
+    "accountNo": "902388310304",
+    "contactNo": "8234567890",
+    "ifscCode": "CMK16620329",
+    "mmid": "0000520"
+  },
   "processing_history": [
     {
       "processor": "654321-to-NTH",
       "step": "TRANSACTION_INITIATED",
-      "time_stamp": "1764821299701"
+      "time_stamp": "1764824695543"
     },
     {
       "processor": "456123-to-NTH",
       "step": "VALIDATION_OF_BENEFICIARY_COMPLETE",
-      "time_stamp": "1764821299812"
+      "time_stamp": "1764824695653"
     }
   ],
-  "txn_id": "TXN012512040408991"
+  "remitter": {
+    "accountNo": "854758856890",
+    "contactNo": "9123456789",
+    "ifscCode": "BRG30647402",
+    "mmid": ""
+  },
+  "txn_id": "TXN012512040504113"
 }

@@ -4,8 +4,11 @@ use serde_json::json;
 
 use crate::{
     config::banks::BANKS,
-    core::{producer::forward_to_bank, state_manager::save_intermidiate_step},
-    types::payload::{self, BankAccount, Payload},
+    core::{
+        producer::forward_to_bank,
+        state_manager::{get_saved_state, save_benificary, save_intermidiate_step, save_remitter},
+    },
+    types::payload::{self, BankAccount, Payload, TransactionState},
     utils::{
         imps_flow::imps_flow,
         parser::{parse_imps_payload, parse_verified_beneficary},
@@ -44,6 +47,7 @@ pub async fn process_imps_request(topic: &str, key: &str, payload: &str) {
                 &state.step,
                 topic,
             );
+
             if key == "imps-transfer" {
                 verify_bank_details(topic, key, payload).await;
             } else if key == "imps-transfer-error" {
@@ -62,6 +66,7 @@ pub async fn process_imps_request(topic: &str, key: &str, payload: &str) {
 async fn verify_bank_details(topic: &str, key: &str, payload: &str) {
     let payload: Payload = parse_imps_payload(payload);
     let error_key = "imps-transfer-error";
+
     if payload.beneficiaryDetails.accountNo.is_empty() && payload.beneficiaryDetails.mmid.is_empty()
     {
         let error_value = "Missing account no or mmid";
@@ -78,6 +83,12 @@ async fn verify_bank_details(topic: &str, key: &str, payload: &str) {
     if !payload.beneficiaryDetails.accountNo.is_empty()
         && !payload.beneficiaryDetails.ifscCode.is_empty()
     {
+        save_remitter(
+            &payload.txnId,
+            &payload.amount.as_str(),
+            &payload.remitterDetails,
+        );
+
         let key = "imps-transfer-verify-details";
         let bank_code = &payload.beneficiaryDetails.ifscCode[0..3];
         let bank = BANKS.get_bank_by_code(bank_code);
@@ -103,6 +114,15 @@ async fn verify_bank_details(topic: &str, key: &str, payload: &str) {
 async fn debit_remitter(topic: &str, key: &str, payload: &str) {
     println!("Debitting remitter");
     let parsed_payload = parse_verified_beneficary(payload);
+    let benificary: BankAccount = BankAccount {
+        accountNo: parsed_payload.accountNo,
+        ifscCode: parsed_payload.ifscCode,
+        contactNo: parsed_payload.accountHolderContactNo,
+        mmid: parsed_payload.mmid,
+    };
+    save_benificary(&parsed_payload.txnId, &benificary);
+    let saved_state: TransactionState = get_saved_state(&parsed_payload.txnId);
+    println!("Got the saved state: {}", saved_state.txn_id)
 }
 
 async fn credit_beneficiary(topic: &str, key: &str, payload: &str) {}
