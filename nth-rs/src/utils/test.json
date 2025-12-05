@@ -1,38 +1,15 @@
 {
-  "amount": 2,
-  "benificary": {
-    "accountNo": "902388310304",
-    "contactNo": "8234567890",
-    "ifscCode": "CMK16620329",
-    "mmid": "0000520"
-  },
-  "processing_history": [
-    {
-      "processor": "654321-to-NTH",
-      "step": "TRANSACTION_INITIATED",
-      "time_stamp": "1764832203142"
-    },
-    {
-      "processor": "456123-to-NTH",
-      "step": "VALIDATION_OF_BENEFICIARY_COMPLETE",
-      "time_stamp": "1764832203258"
-    },
-    {
-      "processor": "654321-to-NTH",
-      "step": "DEBIT_REMITTER_COMPLETE",
-      "time_stamp": "1764832203369"
-    },
-    {
-      "processor": "456123-to-NTH",
-      "step": "CREDIT_BENEFICIARY_COMPLETE",
-      "time_stamp": "1764832203480"
-    }
-  ],
-  "remitter": {
-    "accountNo": "854758856890",
-    "contactNo": "9123456789",
-    "ifscCode": "BRG30647402",
-    "mmid": ""
-  },
-  "txn_id": "TXN012512040710939"
+  "id": "05dd13e6-fd1e-45c6-9e39-eed2ba1722d1",
+  "balance": 5100,
+  "accountNo": "137886560115",
+  "accountHolderName": "Ravi Nair",
+  "accountHolderContactNo": "9123456789",
+  "ifscCode": "CPB09133266",
+  "mmid": "0001836",
+  "branchName": "Chatori Chauraha Branch",
+  "panCardNo": "ABCDE1234F",
+  "createdAt": "2025-12-04T11:42:49.574Z",
+  "updatedAt": "2025-12-05T03:04:09.674Z",
+  "requestedBy": "NTH-to-321987",
+  "txnId": "TXN042512050342276"
 }

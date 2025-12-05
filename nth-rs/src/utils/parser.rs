@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Result, Value};
 
-use crate::types::payload::{AddBankAccount, Payload, TransactionState, VerifiedBankAccount};
+use crate::types::payload::{AddBankAccount, Payload, TransactionState, VerifiedBankAccount, VerifiedUpiBankAccount};
 
 pub fn parse_imps_payload(payload: &str) -> Payload {
     let v: Payload = serde_json::from_str(payload).unwrap();
@@ -10,6 +10,11 @@ pub fn parse_imps_payload(payload: &str) -> Payload {
 
 pub fn parse_upi_add_account_payload(payload: &str) -> AddBankAccount {
     let v: AddBankAccount = serde_json::from_str(payload).unwrap();
+    v
+}
+
+pub fn parse_upi_account_added_payload(payload: &str) -> VerifiedUpiBankAccount {
+    let v: VerifiedUpiBankAccount = serde_json::from_str(payload).unwrap();
     v
 }
 

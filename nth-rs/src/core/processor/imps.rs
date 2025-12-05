@@ -8,7 +8,9 @@ use crate::{
     config::banks::BANKS,
     core::{
         producer::forward_to_bank,
-        state_manager::{get_saved_state, save_benificary, save_intermidiate_step, save_remitter},
+        state_manager::imps_state_manager::{
+            get_saved_state, save_benificary, save_intermidiate_step, save_remitter,
+        },
     },
     types::payload::{self, BankAccount, Payload, TransactionState},
     utils::{
@@ -34,7 +36,6 @@ pub async fn process_imps_request(
 
             if let Ok(txn_json) = txn_id_res {
                 let txn_id_str = txn_json["txnId"].as_str().unwrap_or_default();
-
                 save_intermidiate_step(redis_con, txn_id_str, &state.step, topic).await;
             }
 

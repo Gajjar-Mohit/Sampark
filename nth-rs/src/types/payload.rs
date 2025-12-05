@@ -57,6 +57,22 @@ pub struct VerifiedBankAccount {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct VerifiedUpiBankAccount {
+    pub id: String,
+    pub balance: f64,
+    pub accountNo: String,
+    pub accountHolderContactNo: String,
+    pub ifscCode: String,
+    pub mmid: String,
+    pub branchName: String,
+    pub panCardNo: String,
+    pub createdAt: String,
+    pub updatedAt: String,
+    pub requestedBy: String,
+    pub txnId: String,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct TransactionState {
     pub amount: Number,
     pub benificary: BankAccount,

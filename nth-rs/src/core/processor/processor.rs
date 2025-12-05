@@ -4,7 +4,7 @@ use rdkafka::producer::FutureProducer;
 use redis::aio::MultiplexedConnection;
 
 use crate::{
-    core::processor::{imps::process_imps_request, upi::process_upi_add_account_request},
+    core::processor::{imps::process_imps_request, upi::process_upi_request},
     types::payload::{AddBankAccount, Payload},
     utils::parser::{parse_imps_payload, parse_upi_add_account_payload},
 };
@@ -21,7 +21,7 @@ pub async fn process_imcomming_request(
             process_imps_request(topic, key.unwrap(), payload, &producer, &mut redis_con).await;
         }
         Some(k) if k.contains("upi") => {
-            process_upi_add_account_request(topic, payload);
+            process_upi_request(topic, key.unwrap(), payload, &producer, &mut redis_con).await;
         }
         _ => {}
     }
