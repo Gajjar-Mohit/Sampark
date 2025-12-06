@@ -73,7 +73,7 @@ pub struct VerifiedUpiBankAccount {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct TransactionState {
+pub struct IMPSTransactionState {
     pub amount: Number,
     pub benificary: BankAccount,
     pub processing_history: Vec<State>,
@@ -85,4 +85,59 @@ pub struct State {
     pub processor: String,
     pub step: String,
     pub time_stamp: String,
+}
+
+pub struct Step {
+    pub step: String,
+    pub key: String,
+    pub sequence: u8,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct InitUpiPayload {
+    pub txnId: String,
+    pub toVpa: String,
+    pub fromVpa: String,
+    pub amount: Number,
+    pub requestedBy: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct VerifiedVpa {
+    pub accountNo: String,
+    pub ifscCode: String,
+    pub contactNo: String,
+    pub name: String,
+    pub vpa: String,
+    pub txnId: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UpiTransactionState {
+    pub txnId: String,
+    pub toVpa: String,
+    pub fromVpa: String,
+    pub amount: Number,
+    pub requestedBy: String,
+    pub senderBank: VerifiedVpa,
+    pub recieverBank: VerifiedVpa,
+    pub processing_history: Vec<State>,
+}
+
+
+#[derive(Serialize, Deserialize)]
+pub struct UpiTransactionStateWithoutBanks {
+    pub txnId: String,
+    pub toVpa: String,
+    pub fromVpa: String,
+    pub amount: Number,
+    pub requestedBy: String,
+    pub processing_history: Vec<State>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DebitRemitterPayload {
+    pub amount: Number,
+    pub beneficiaryBank: VerifiedVpa,
+    pub senderBank: VerifiedVpa,
+    pub txnId: String
 }

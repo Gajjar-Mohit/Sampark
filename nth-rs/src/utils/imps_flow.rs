@@ -1,8 +1,6 @@
-pub struct Step {
-    pub step: String,
-    pub key: String,
-    pub sequence: u8,
-}
+use crate::types::payload::Step;
+
+
 
 pub static imps_flow: std::sync::LazyLock<[Step; 7]> = std::sync::LazyLock::new(|| {
     [

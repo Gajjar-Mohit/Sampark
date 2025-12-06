@@ -9,10 +9,10 @@ use crate::{
     core::{
         producer::forward_to_bank,
         state_manager::imps_state_manager::{
-            get_saved_state, save_benificary, save_intermidiate_step, save_remitter,
+             get_saved_state, save_benificary, save_intermidiate_step, save_remitter
         },
     },
-    types::payload::{self, BankAccount, Payload, TransactionState},
+    types::payload::{self, BankAccount, IMPSTransactionState, Payload},
     utils::{
         imps_flow::imps_flow,
         parser::{parse_imps_payload, parse_verified_beneficary},
@@ -128,7 +128,7 @@ async fn debit_remitter(
 
     save_benificary(&parsed_payload.txnId, &benificary, redis_con).await;
 
-    let saved_state: TransactionState = get_saved_state(&parsed_payload.txnId, redis_con).await;
+    let saved_state: IMPSTransactionState = get_saved_state(&parsed_payload.txnId, redis_con).await;
 
     let new_key = "imps-transfer-debit-remitter";
 
@@ -168,7 +168,7 @@ async fn credit_beneficiary(
         .as_str()
         .expect("txnId must be a string");
 
-    let saved_state: TransactionState = get_saved_state(txnid, redis_con).await;
+    let saved_state: IMPSTransactionState = get_saved_state(txnid, redis_con).await;
 
     let new_key = "imps-transfer-credit-beneficiary";
     let bank_code = if saved_state.benificary.ifscCode.len() >= 3 {
@@ -206,7 +206,7 @@ async fn transaction_complete(
         .as_str()
         .expect("txnId must be a string");
 
-    let saved_state: TransactionState = get_saved_state(txnid, redis_con).await;
+    let saved_state: IMPSTransactionState = get_saved_state(txnid, redis_con).await;
 
     let new_key = "imps-transfer-complete";
     let bank_code = if saved_state.remitter.ifscCode.len() >= 3 {

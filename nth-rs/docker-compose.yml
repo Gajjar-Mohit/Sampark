@@ -1,14 +1,21 @@
 version: '3.8'
+
 services:
   nth-rs:
     build:
       context: .
       dockerfile: Dockerfile
+      # Enable BuildKit for better caching
+      cache_from:
+        - nth-rs:latest
+    image: nth-rs:latest
     container_name: nth-rs
     environment:
       KAFKA_BROKERS: kafka:9092
     networks:
       - kafka-network
+    # Restart policy for production
+    restart: unless-stopped
 
 networks:
   kafka-network:

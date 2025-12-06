@@ -244,7 +244,7 @@ services:
   # Bank Services
   babu-rao-ganpatrao-bank-service:
     build:
-      context: ./banks/babu-rao-ganpatrao-bank
+      context: ./Banks/babu-rao-ganpatrao-bank
       dockerfile: Dockerfile
     container_name: babu-rao-ganpatrao-bank-service
     ports:
@@ -271,8 +271,8 @@ services:
       - babu-rao-ganpatrao-bank-network
       - kafka-network
     volumes:
-      - ./banks/babu-rao-ganpatrao-bank/src:/usr/src/app/src:ro
-      - ./banks/babu-rao-ganpatrao-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/babu-rao-ganpatrao-bank/src:/usr/src/app/src:ro
+      - ./Banks/babu-rao-ganpatrao-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -284,7 +284,7 @@ services:
 
   chai-pani-service:
     build:
-      context: ./banks/chai-pani-bank
+      context: ./Banks/chai-pani-bank
       dockerfile: Dockerfile
     container_name: chai-pani-service
     ports:
@@ -311,8 +311,8 @@ services:
       - chai-pani-network
       - kafka-network
     volumes:
-      - ./banks/chai-pani-bank/src:/usr/src/app/src:ro
-      - ./banks/chai-pani-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/chai-pani-bank/src:/usr/src/app/src:ro
+      - ./Banks/chai-pani-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -324,7 +324,7 @@ services:
 
   chinta-mat-karo-service:
     build:
-      context: ./banks/chinta-mat-karo-bank
+      context: ./Banks/chinta-mat-karo-bank
       dockerfile: Dockerfile
     container_name: chinta-mat-karo-service
     ports:
@@ -351,8 +351,8 @@ services:
       - chinta-mat-karo-network
       - kafka-network
     volumes:
-      - ./banks/chinta-mat-karo-bank/src:/usr/src/app/src:ro
-      - ./banks/chinta-mat-karo-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/chinta-mat-karo-bank/src:/usr/src/app/src:ro
+      - ./Banks/chinta-mat-karo-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -364,7 +364,7 @@ services:
 
   paisa-vasool-bank-service:
     build:
-      context: ./banks/paisa-vasool-bank
+      context: ./Banks/paisa-vasool-bank
       dockerfile: Dockerfile
     container_name: paisa-vasool-bank-service
     ports:
@@ -391,8 +391,8 @@ services:
       - paisa-vasool-bank-network
       - kafka-network
     volumes:
-      - ./banks/paisa-vasool-bank/src:/usr/src/app/src:ro
-      - ./banks/paisa-vasool-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/paisa-vasool-bank/src:/usr/src/app/src:ro
+      - ./Banks/paisa-vasool-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
