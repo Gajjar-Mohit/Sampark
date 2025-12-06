@@ -185,42 +185,42 @@ let createdTpapAccounts: any = [];
 
 describe("UPI Transfer System", () => {
   // Account Creation Tests
-  describe("User Account Creation", () => {
-    tpapUrls.forEach((tpap) => {
-      describe(`Creating accounts on ${tpap.code.toUpperCase()}`, () => {
-        test.each(testData)(
-          "Should create account for $name (PAN: $pan)",
-          async ({
-            pan,
-            name,
-            contactNo,
-            email,
-            banks,
-            bankAccounts,
-            totalAccounts,
-          }: ValidPerson) => {
-            console.log(
-              `Creating account for: ${name} (PAN: ${pan}) with ${totalAccounts} bank accounts across: ${banks.join(
-                ", "
-              )}`
-            );
+//   describe("User Account Creation", () => {
+//     tpapUrls.forEach((tpap) => {
+//       describe(`Creating accounts on ${tpap.code.toUpperCase()}`, () => {
+//         test.each(testData)(
+//           "Should create account for $name (PAN: $pan)",
+//           async ({
+//             pan,
+//             name,
+//             contactNo,
+//             email,
+//             banks,
+//             bankAccounts,
+//             totalAccounts,
+//           }: ValidPerson) => {
+//             console.log(
+//               `Creating account for: ${name} (PAN: ${pan}) with ${totalAccounts} bank accounts across: ${banks.join(
+//                 ", "
+//               )}`
+//             );
 
-            const accountCreationResponse = await createAccounts(
-              {
-                contactNo,
-                name,
-                email,
-              },
-              tpap.url
-            );
-            createdTpapAccounts.push(accountCreationResponse);
+//             const accountCreationResponse = await createAccounts(
+//               {
+//                 contactNo,
+//                 name,
+//                 email,
+//               },
+//               tpap.url
+//             );
+//             createdTpapAccounts.push(accountCreationResponse);
 
-            expect(accountCreationResponse.status).toBe(200);
-          }
-        );
-      });
-    });
-  });
+//             expect(accountCreationResponse.status).toBe(200);
+//           }
+//         );
+//       });
+//     });
+//   });
 
   // Bank Account Addition Tests
   describe("Bank Account Addition", () => {

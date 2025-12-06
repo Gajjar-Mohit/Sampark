@@ -1,0 +1,45 @@
+{
+  "amount": 19,
+  "fromVpa": "340304319297@cmk",
+  "processing_history": [
+    {
+      "processor": "456123-to-NTH",
+      "step": "TRANSACTION_INITIATED",
+      "time_stamp": "1765000744677"
+    },
+    {
+      "processor": "456123-to-NTH",
+      "step": "VERIFY_FROM_VPA_COMPLETE",
+      "time_stamp": "1765000744718"
+    },
+    {
+      "processor": "321987-to-NTH",
+      "step": "VERIFY_TO_VPA_COMPLETE",
+      "time_stamp": "1765000744825"
+    },
+    {
+      "processor": "456123-to-NTH",
+      "step": "DEBIT_REMITTER_COMPLETE",
+      "time_stamp": "1765000744923"
+    }
+  ],
+  "recieverBank": {
+    "accountNo": "941466329718",
+    "contactNo": "3789012345",
+    "ifscCode": "CPB98051786",
+    "name": "Suresh Rao",
+    "txnId": "TXN032512060559644",
+    "vpa": "941466329718@pvb"
+  },
+  "requestedBy": "NTH-to-456123",
+  "senderBank": {
+    "accountNo": "340304319297",
+    "contactNo": "3789012345",
+    "ifscCode": "CMK81723842",
+    "name": "Suresh Rao",
+    "txnId": "TXN032512060559644",
+    "vpa": "340304319297@cmk"
+  },
+  "toVpa": "941466329718@pvb",
+  "txnId": "TXN032512060559644"
+}

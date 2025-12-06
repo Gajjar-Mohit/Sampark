@@ -20,10 +20,13 @@ services:
     container_name: kafka
     depends_on:
       - zookeeper
+    ports:
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -51,57 +54,57 @@ services:
       driver: "none"
     restart: unless-stopped
 
-  # grafana:
-  #   image: grafana/grafana-oss
-  #   container_name: grafana
-  #   ports:
-  #     - 3006:3000
-  #   environment:
-  #     # Disable all Grafana logging
-  #     GF_LOG_LEVEL: "off"
-  #     GF_LOG_MODE: ""
-  #     GF_LOG_CONSOLE_LEVEL: "off"
-  #     GF_LOG_FILE_LEVEL: "off"
-  #     GF_ALERTING_ENABLED: "false"
-  #     GF_METRICS_ENABLED: "false"
-  #     GF_TRACING_ENABLED: "false"
-  #   networks:
-  #     - grafana-network
-  #   logging:
-  #     driver: "none"
-  #   restart: unless-stopped
+    # grafana:
+    #   image: grafana/grafana-oss
+    #   container_name: grafana
+    #   ports:
+    #     - 3006:3000
+    #   environment:
+    #     # Disable all Grafana logging
+    #     GF_LOG_LEVEL: "off"
+    #     GF_LOG_MODE: ""
+    #     GF_LOG_CONSOLE_LEVEL: "off"
+    #     GF_LOG_FILE_LEVEL: "off"
+    #     GF_ALERTING_ENABLED: "false"
+    #     GF_METRICS_ENABLED: "false"
+    #     GF_TRACING_ENABLED: "false"
+    #   networks:
+    #     - grafana-network
+    #   logging:
+    #     driver: "none"
+    #   restart: unless-stopped
 
-  # prometheus-server:
-  #   image: prom/prometheus
-  #   container_name: prometheus-server
-  #   depends_on:
-  #     - grafana
-  #   ports:
-  #     - 9090:9090
-  #   volumes:
-  #     - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
-  #   environment:
-  #     # Disable Prometheus logging
-  #     PROMETHEUS_LOG_LEVEL: "off"
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     - '--storage.tsdb.path=/prometheus'
-  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
-  #     - '--web.console.templates=/etc/prometheus/consoles'
-  #     - '--web.enable-lifecycle'
-  #     - '--log.level=error'
-  #   networks:
-  #     - grafana-network
-  #     - kafka-network
-  #     - chai-pani-network
-  #     - chinta-mat-karo-network
-  #     - paisa-vasool-bank-network
-  #     - babu-rao-ganpatrao-bank-network
-  #     - bazzar-pe-network
-  #     - chillar-pay-network
-  #   logging:
-  #     driver: "none"
-  #   restart: unless-stopped
+    # prometheus-server:
+    #   image: prom/prometheus
+    #   container_name: prometheus-server
+    #   depends_on:
+    #     - grafana
+    #   ports:
+    #     - 9090:9090
+    #   volumes:
+    #     - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+    #   environment:
+    #     # Disable Prometheus logging
+    #     PROMETHEUS_LOG_LEVEL: "off"
+    #   command:
+    #     - '--config.file=/etc/prometheus/prometheus.yml'
+    #     - '--storage.tsdb.path=/prometheus'
+    #     - '--web.console.libraries=/etc/prometheus/console_libraries'
+    #     - '--web.console.templates=/etc/prometheus/consoles'
+    #     - '--web.enable-lifecycle'
+    #     - '--log.level=error'
+    #   networks:
+    #     - grafana-network
+    #     - kafka-network
+    #     - chai-pani-network
+    #     - chinta-mat-karo-network
+    #     - paisa-vasool-bank-network
+    #     - babu-rao-ganpatrao-bank-network
+    #     - bazzar-pe-network
+    #     - chillar-pay-network
+    #   logging:
+    #     driver: "none"
+    #   restart: unless-stopped
     
   # Shared Redis Instance
   redis-stack:
@@ -120,38 +123,50 @@ services:
     restart: unless-stopped
 
   # NTH Switch Service
-  nth-switch:
-    build:
-      context: ./nth
-      dockerfile: Dockerfile
-    container_name: nth-service
-    ports:
-      - "3005:3000"
-    environment:
-      NODE_ENV: production
-      KAFKA_BASEURL: kafka:9092
-      REDIS_URL: redis://redis-stack:6379
-      REDIS_HOST: redis-stack
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      REDIS_DB: 0
-      PORT: 3000
-    depends_on:
-      kafka:
-        condition: service_healthy
-      redis-stack:
-        condition: service_started
-    networks:
-      - kafka-network
-    volumes:
-      - ./nth/src:/usr/src/app/src:ro
-    command: >
-      sh -c "
-        echo 'Waiting for Redis to be ready...' &&
-        bun run seed &&
-        bun run src/index.ts
-      "
-    restart: unless-stopped
+  # nth-switch:
+  #   build:
+  #     context: ./nth
+  #     dockerfile: Dockerfile
+  #   container_name: nth-service
+  #   ports:
+  #     - "3005:3000"
+  #   environment:
+  #     NODE_ENV: production
+  #     KAFKA_BASEURL: kafka:9092
+  #     REDIS_URL: redis://redis-stack:6379
+  #     REDIS_HOST: redis-stack
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: ""
+  #     REDIS_DB: 0
+  #     PORT: 3000
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     redis-stack:
+  #       condition: service_started
+  #   networks:
+  #     - kafka-network
+  #   volumes:
+  #     - ./nth/src:/usr/src/app/src:ro
+  #   command: >
+  #     sh -c "
+  #       echo 'Waiting for Redis to be ready...' &&
+  #       bun run seed &&
+  #       bun run src/index.ts
+  #     "
+  #   restart: unless-stopped
+
+  # nth-rs:
+  #   build:
+  #     context: ./nth-rs
+  #     dockerfile: Dockerfile
+  #   container_name: nth-rs
+  #   depends_on:
+  #     - kafka
+  #   environment:
+  #     KAFKA_BROKERS: kafka:9092
+  #   networks:
+  #     - kafka-network
 
   # Database Services
   babu-rao-ganpatrao-bank-db:
@@ -229,7 +244,7 @@ services:
   # Bank Services
   babu-rao-ganpatrao-bank-service:
     build:
-      context: ./banks/babu-rao-ganpatrao-bank
+      context: ./Banks/babu-rao-ganpatrao-bank
       dockerfile: Dockerfile
     container_name: babu-rao-ganpatrao-bank-service
     ports:
@@ -256,8 +271,8 @@ services:
       - babu-rao-ganpatrao-bank-network
       - kafka-network
     volumes:
-      - ./banks/babu-rao-ganpatrao-bank/src:/usr/src/app/src:ro
-      - ./banks/babu-rao-ganpatrao-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/babu-rao-ganpatrao-bank/src:/usr/src/app/src:ro
+      - ./Banks/babu-rao-ganpatrao-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -269,7 +284,7 @@ services:
 
   chai-pani-service:
     build:
-      context: ./banks/chai-pani-bank
+      context: ./Banks/chai-pani-bank
       dockerfile: Dockerfile
     container_name: chai-pani-service
     ports:
@@ -296,8 +311,8 @@ services:
       - chai-pani-network
       - kafka-network
     volumes:
-      - ./banks/chai-pani-bank/src:/usr/src/app/src:ro
-      - ./banks/chai-pani-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/chai-pani-bank/src:/usr/src/app/src:ro
+      - ./Banks/chai-pani-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -309,7 +324,7 @@ services:
 
   chinta-mat-karo-service:
     build:
-      context: ./banks/chinta-mat-karo-bank
+      context: ./Banks/chinta-mat-karo-bank
       dockerfile: Dockerfile
     container_name: chinta-mat-karo-service
     ports:
@@ -336,8 +351,8 @@ services:
       - chinta-mat-karo-network
       - kafka-network
     volumes:
-      - ./banks/chinta-mat-karo-bank/src:/usr/src/app/src:ro
-      - ./banks/chinta-mat-karo-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/chinta-mat-karo-bank/src:/usr/src/app/src:ro
+      - ./Banks/chinta-mat-karo-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -349,7 +364,7 @@ services:
 
   paisa-vasool-bank-service:
     build:
-      context: ./banks/paisa-vasool-bank
+      context: ./Banks/paisa-vasool-bank
       dockerfile: Dockerfile
     container_name: paisa-vasool-bank-service
     ports:
@@ -376,8 +391,8 @@ services:
       - paisa-vasool-bank-network
       - kafka-network
     volumes:
-      - ./banks/paisa-vasool-bank/src:/usr/src/app/src:ro
-      - ./banks/paisa-vasool-bank/prisma:/usr/src/app/prisma:ro
+      - ./Banks/paisa-vasool-bank/src:/usr/src/app/src:ro
+      - ./Banks/paisa-vasool-bank/prisma:/usr/src/app/prisma:ro
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -544,7 +559,7 @@ services:
   
 networks:
   kafka-network:
-    driver: bridge
+    external: true
   babu-rao-ganpatrao-bank-network:
     driver: bridge
   chai-pani-network:

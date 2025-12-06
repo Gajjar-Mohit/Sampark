@@ -171,7 +171,6 @@ export async function saveIntermidiateTXState(
 
 export async function saveUpiTranferDetails(transactionId: string, data: any) {
   console.log(`Storing sender data for transaction: ${transactionId}`);
-
   try {
     // Get existing transaction state
     const existingState = await redisClient.get(transactionId);
@@ -203,8 +202,13 @@ export async function saveUpiTranferDetails(transactionId: string, data: any) {
   }
 }
 
-export async function saveUPITransactionSenderDetails(transactionId: string, data: any) {
-  console.log(`Storing UPI transaction sender details for transaction: ${transactionId}`);
+export async function saveUPITransactionSenderDetails(
+  transactionId: string,
+  data: any
+) {
+  console.log(
+    `Storing UPI transaction sender details for transaction: ${transactionId}`
+  );
 
   try {
     // Get existing transaction state
@@ -236,8 +240,13 @@ export async function saveUPITransactionSenderDetails(transactionId: string, dat
     throw error;
   }
 }
-export async function saveUPITransactionBeneficiaryDetails(transactionId: string, data: any) {
-  console.log(`Storing UPI transaction beneficiary details for transaction: ${transactionId}`);
+export async function saveUPITransactionBeneficiaryDetails(
+  transactionId: string,
+  data: any
+) {
+  console.log(
+    `Storing UPI transaction beneficiary details for transaction: ${transactionId}`
+  );
 
   try {
     // Get existing transaction state

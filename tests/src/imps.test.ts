@@ -1,5 +1,6 @@
 // import axios from "axios";
-// import { file } from "bun";
+// import { readFileSync } from "fs"; // Using fs for synchronous reading
+// import path from "path";
 
 // // Bank URLs
 // export const BABU_RAO_GANPAT_RAO_BANK_URL = "http://localhost:3001";
@@ -55,27 +56,65 @@
 //   return await axios.request(config);
 // }
 
-// describe("IMPS Transfer Combinations", () => {
-//   let people: { [pan: string]: { [bank: string]: Account } } = {};
-//   let personList: string[] = [];
-//   let allAccounts: Account[] = [];
+// // --- DATA PREPARATION ---
+// // We must load data synchronously at the top level.
+// // If we load it in beforeAll(), it won't be ready when 'describe' blocks run to generate tests.
+// const people: { [pan: string]: { [bank: string]: Account } } = {};
+// let personList: string[] = [];
 
-//   beforeAll(async () => {
-//     // Read and parse the JSON file
-//     const fileContent = await file("userAccounts.json").text();
-//     allAccounts = JSON.parse(fileContent) as Account[];
+// try {
+//   // Read and parse the JSON file synchronously
+//   const fileContent = readFileSync("userAccounts.json", "utf-8");
+//   const allAccounts = JSON.parse(fileContent) as Account[];
 
-//     // Organize accounts by PAN and bank
-//     for (let acc of allAccounts) {
-//       const pan = acc.panCardNo;
-//       if (!people[pan]) {
-//         people[pan] = {};
-//       }
-//       const bank = getBankCodeFromIFSC(acc.ifscCode);
-//       people[pan][bank] = acc;
+//   // Organize accounts by PAN and bank
+//   for (let acc of allAccounts) {
+//     const pan = acc.panCardNo;
+//     if (!people[pan]) {
+//       people[pan] = {};
 //     }
-//     personList = Object.keys(people);
-//     console.log("Number of people:", personList.length);
+//     const bank = getBankCodeFromIFSC(acc.ifscCode);
+//     people[pan][bank] = acc;
+//   }
+//   personList = Object.keys(people);
+//   console.log("Data loaded successfully. People count:", personList.length);
+// } catch (error) {
+//   console.error("Error loading userAccounts.json:", error);
+// }
+
+// describe("IMPS Transfer Combinations", () => {
+//   // You can still use beforeAll for debug logging if you wish
+//   beforeAll(() => {
+//     // Debug: Check first person
+//     if (personList.length > 0) {
+//       const firstPan = personList[0];
+//       const firstPerson = people[firstPan!];
+
+//       // FIX 1: Check if 'firstPerson' is defined before accessing keys
+//       if (firstPerson) {
+//         console.log("\n=== DEBUG INFO ===");
+//         console.log("First person PAN:", firstPan);
+//         console.log("Banks available:", Object.keys(firstPerson));
+//         console.log(
+//           "Total accounts per person:",
+//           Object.keys(firstPerson).length
+//         );
+//       }
+//     }
+
+//     // Check a few people
+//     let peopleWithAllBanks = 0;
+//     for (const pan of personList) {
+//       const person = people[pan];
+//       // FIX 2: Check if 'person' is defined
+//       if (person) {
+//         const banksForPerson = Object.keys(person);
+//         if (banksForPerson.length === 4) {
+//           peopleWithAllBanks++;
+//         }
+//       }
+//     }
+//     console.log("People with all 4 banks:", peopleWithAllBanks);
 //   });
 
 //   // Generate test suites for each bank-to-bank combination
@@ -85,27 +124,42 @@
 //         describe(`Transfers from ${remitterBank} to ${beneficiaryBank}`, () => {
 //           // Find people who have accounts in both remitter and beneficiary banks
 //           const validPeople = personList
-//             .filter(
-//               (pan) =>
-//                 people![pan]![remitterBank] && people[pan]![beneficiaryBank]
-//             )
-//             .map((pan) => ({
-//               pan,
-//               name: people[pan]![remitterBank]?.accountHolderName || "Unknown",
-//             }));
+//             .filter((pan) => {
+//               const person = people[pan];
+//               if (!person) return false;
+
+//               const hasRemitter = remitterBank in person;
+//               const hasBeneficiary = beneficiaryBank in person;
+
+//               return hasRemitter && hasBeneficiary;
+//             })
+//             .map((pan) => {
+//               const person = people[pan];
+//               // Optional chaining handles undefined safely here
+//               const remitterAcc = person?.[remitterBank];
+//               return {
+//                 pan,
+//                 name: remitterAcc?.accountHolderName || "Unknown",
+//               };
+//             });
 
 //           if (validPeople.length === 0) {
+//             // Use test.skip properly if no data matches
 //             test.skip(`No people found with accounts in both ${remitterBank} and ${beneficiaryBank}`, () => {});
 //             return;
 //           }
 
+//           console.log(
+//             `\n${remitterBank} -> ${beneficiaryBank}: ${validPeople.length} valid transfers`
+//           );
+
 //           test.each(validPeople)(
 //             `Transfer from $name's ${remitterBank} account to their ${beneficiaryBank} account`,
-//             async ({ pan }) => {
+//             async ({ pan }: { pan: string; name: string }) => {
 //               // Get remitter account (from remitter bank)
-//               const remitterAccount = people[pan]![remitterBank];
+//               const remitterAccount = people[pan]?.[remitterBank];
 //               // Get beneficiary account (from beneficiary bank)
-//               const beneficiaryAccount = people[pan]![beneficiaryBank];
+//               const beneficiaryAccount = people[pan]?.[beneficiaryBank];
 
 //               if (!remitterAccount || !beneficiaryAccount) {
 //                 throw new Error(
@@ -130,7 +184,7 @@
 //                 remitterIFSCode: remitterAccount.ifscCode,
 //               };
 
-//               // Call the remitter's bank API (the bank that holds the remitter's account)
+//               // Call the remitter's bank API
 //               const remitterBankUrl = bankUrls[remitterBank];
 //               if (!remitterBankUrl) {
 //                 throw new Error(`Bank URL not found for ${remitterBank}`);

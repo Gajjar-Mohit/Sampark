@@ -7,7 +7,8 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "baseline-browser-mapping": "^2.8.32"
   },
   "peerDependencies": {
     "typescript": "^5"
